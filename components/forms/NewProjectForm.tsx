@@ -1,0 +1,248 @@
+'use client'
+import { useState } from 'react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { projectSchema, ProjectFormData } from '@/types/project'
+import FormCard from '@/components/FormCard'
+import Toast from '@/components/Toast'
+
+const CLIENTS = ['AT&T', 'Verizon', 'T-Mobile', 'Crown Castle', 'SBA Communications']
+const AMERICLOUD_PMS = ['John Smith', 'Sarah Johnson', 'Mike Davis']
+const AMERICLOUD_RFS = ['Robert Chen', 'Lisa Park', 'David Wilson']
+const PROJECT_TEMPLATES = ['Standard Cell Tower', 'Small Cell', 'DAS', 'Rooftop']
+
+function inputClass(hasError: boolean) {
+  return `w-full bg-[#0B1929] border ${
+    hasError ? 'border-[#C8102E]' : 'border-[#1E3A5F]'
+  } rounded-md px-3 py-2.5 text-white text-sm placeholder-[#4A6FA5] focus:outline-none focus:ring-2 focus:ring-[#C8102E] focus:border-transparent transition-colors`
+}
+
+function Field({
+  label,
+  error,
+  required,
+  children,
+}: {
+  label: string
+  error?: string
+  required?: boolean
+  children: React.ReactNode
+}) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <label className="text-[#94A3B8] text-xs uppercase tracking-wider font-medium">
+        {label}
+        {required && <span className="text-[#C8102E] ml-1">*</span>}
+      </label>
+      {children}
+      {error && <p className="text-[#C8102E] text-xs mt-0.5">{error}</p>}
+    </div>
+  )
+}
+
+export default function NewProjectForm() {
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<ProjectFormData>({ resolver: zodResolver(projectSchema) })
+
+  const onSubmit = async (data: ProjectFormData) => {
+    setIsSubmitting(true)
+    try {
+      const res = await fetch('/api/projects', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      })
+      if (!res.ok) throw new Error()
+      reset()
+      setToast({ message: 'Project created successfully', type: 'success' })
+    } catch {
+      setToast({ message: 'Something went wrong. Please try again.', type: 'error' })
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  return (
+    <>
+      {toast && <Toast {...toast} onDismiss={() => setToast(null)} />}
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+
+        {/* Row 1 */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <FormCard title="Site Information">
+            <div className="space-y-4">
+              <Field label="Site Name" required error={errors.site_name?.message}>
+                <input
+                  {...register('site_name')}
+                  className={inputClass(!!errors.site_name)}
+                  placeholder="Enter site name"
+                />
+              </Field>
+              <Field label="Address" required error={errors.address?.message}>
+                <input
+                  {...register('address')}
+                  className={inputClass(!!errors.address)}
+                  placeholder="Enter address"
+                />
+              </Field>
+              <Field label="AmeriCloud Site ID" required error={errors.americloud_site_id?.message}>
+                <input
+                  {...register('americloud_site_id')}
+                  className={inputClass(!!errors.americloud_site_id)}
+                  placeholder="e.g. AC-2024-001"
+                />
+              </Field>
+            </div>
+          </FormCard>
+
+          <FormCard title="Client & IDs">
+            <div className="space-y-4">
+              <Field label="Client" required error={errors.client?.message}>
+                <select
+                  {...register('client')}
+                  aria-label="Client"
+                  className={inputClass(!!errors.client)}
+                >
+                  <option value="">Select client...</option>
+                  {CLIENTS.map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+              </Field>
+              <Field label="Client Site ID" error={errors.client_site_id?.message}>
+                <input
+                  {...register('client_site_id')}
+                  className={inputClass(!!errors.client_site_id)}
+                  placeholder="Enter client site ID"
+                />
+              </Field>
+            </div>
+          </FormCard>
+        </div>
+
+        {/* Row 2: Customer Contact (full width) */}
+        <FormCard title="Customer Contact">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div>
+              <h3 className="text-white font-semibold text-sm mb-3">PM Information</h3>
+              <div className="border-t border-[#1E3A5F] pt-4 space-y-4">
+                <Field label="Name">
+                  <input
+                    {...register('pm_name')}
+                    className={inputClass(false)}
+                    placeholder="PM full name"
+                  />
+                </Field>
+                <Field label="Email" error={errors.pm_email?.message}>
+                  <input
+                    {...register('pm_email')}
+                    type="email"
+                    className={inputClass(!!errors.pm_email)}
+                    placeholder="pm@client.com"
+                  />
+                </Field>
+                <Field label="Phone">
+                  <input
+                    {...register('pm_phone')}
+                    type="tel"
+                    className={inputClass(false)}
+                    placeholder="(555) 000-0000"
+                  />
+                </Field>
+              </div>
+            </div>
+            <div>
+              <h3 className="text-white font-semibold text-sm mb-3">RF Engineer Information</h3>
+              <div className="border-t border-[#1E3A5F] pt-4 space-y-4">
+                <Field label="Name">
+                  <input
+                    {...register('rf_engineer_name')}
+                    className={inputClass(false)}
+                    placeholder="RF Engineer full name"
+                  />
+                </Field>
+                <Field label="Email" error={errors.rf_engineer_email?.message}>
+                  <input
+                    {...register('rf_engineer_email')}
+                    type="email"
+                    className={inputClass(!!errors.rf_engineer_email)}
+                    placeholder="rf@client.com"
+                  />
+                </Field>
+                <Field label="Phone">
+                  <input
+                    {...register('rf_engineer_phone')}
+                    type="tel"
+                    className={inputClass(false)}
+                    placeholder="(555) 000-0000"
+                  />
+                </Field>
+              </div>
+            </div>
+          </div>
+        </FormCard>
+
+        {/* Row 3 */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <FormCard title="AmeriCloud Team">
+            <div className="space-y-4">
+              <Field label="AmeriCloud PM">
+                <select {...register('americloud_pm')} className={inputClass(false)}>
+                  <option value="">Select PM...</option>
+                  {AMERICLOUD_PMS.map((p) => (
+                    <option key={p} value={p}>{p}</option>
+                  ))}
+                </select>
+              </Field>
+              <Field label="AmeriCloud RF Engineer">
+                <select {...register('americloud_rf')} className={inputClass(false)}>
+                  <option value="">Select RF Engineer...</option>
+                  {AMERICLOUD_RFS.map((r) => (
+                    <option key={r} value={r}>{r}</option>
+                  ))}
+                </select>
+              </Field>
+            </div>
+          </FormCard>
+
+          <FormCard title="Project Details">
+            <div className="space-y-4">
+              <Field label="Project Template">
+                <select {...register('project_template')} className={inputClass(false)}>
+                  <option value="">Select template...</option>
+                  {PROJECT_TEMPLATES.map((t) => (
+                    <option key={t} value={t}>{t}</option>
+                  ))}
+                </select>
+              </Field>
+              <Field label="Project Scope">
+                <textarea
+                  {...register('project_scope')}
+                  className={`${inputClass(false)} resize-none`}
+                  rows={4}
+                  placeholder="Describe the project scope..."
+                />
+              </Field>
+            </div>
+          </FormCard>
+        </div>
+
+        {/* Submit */}
+        <button
+          type="submit"
+          disabled={isSubmitting}
+          className="w-full bg-[#C8102E] hover:bg-[#A50E25] disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold py-3.5 rounded-lg transition-colors text-sm uppercase tracking-widest shadow-lg"
+        >
+          {isSubmitting ? 'Creating Project...' : 'Create Project'}
+        </button>
+      </form>
+    </>
+  )
+}
