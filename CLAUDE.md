@@ -9,7 +9,7 @@ An internal tool for AmeriCloud to track and manage telecom site projects. Built
 
 | Layer | Choice |
 |-------|--------|
-| Framework | Next.js 14 (App Router) + TypeScript |
+| Framework | Next.js 16 (App Router) + TypeScript |
 | Styling | Tailwind CSS |
 | Form handling | React Hook Form + Zod |
 | Database | Supabase (hosted Postgres) |

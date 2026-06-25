@@ -5,10 +5,10 @@ const optionalEmail = z
   .optional()
 
 export const projectSchema = z.object({
-  site_name: z.string().min(1, 'Site name is required'),
-  address: z.string().min(1, 'Address is required'),
-  americloud_site_id: z.string().min(1, 'AmeriCloud Site ID is required'),
-  client: z.string().min(1, 'Client is required'),
+  site_name: z.string().trim().min(1, 'Site name is required'),
+  address: z.string().trim().min(1, 'Address is required'),
+  americloud_site_id: z.string().trim().min(1, 'AmeriCloud Site ID is required'),
+  client: z.string().trim().min(1, 'Client is required'),
   client_site_id: z.string().optional(),
   pm_name: z.string().optional(),
   pm_email: optionalEmail,

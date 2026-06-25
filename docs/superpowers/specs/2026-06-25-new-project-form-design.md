@@ -16,7 +16,7 @@ A landing page for creating new telecom site projects internally at AmeriCloud. 
 
 | Layer | Choice | Reason |
 |-------|--------|--------|
-| Framework | Next.js 14 (App Router) + TypeScript | Full-stack, built-in routing, easy API routes for Supabase |
+| Framework | Next.js 16 (App Router) + TypeScript | Full-stack, built-in routing, easy API routes for Supabase |
 | Styling | Tailwind CSS | Fast, consistent, responsive by default |
 | Form | React Hook Form + Zod | Validation, error states, minimal re-renders |
 | Database | Supabase (hosted Postgres) | Managed, free tier, easy Next.js integration |
