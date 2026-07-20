@@ -23,3 +23,23 @@ export const projectSchema = z.object({
 })
 
 export type ProjectFormData = z.infer<typeof projectSchema>
+
+export type Project = {
+  id: string
+  site_name: string
+  address: string
+  americloud_site_id: string
+  client: string
+  client_site_id: string | null
+  pm_name: string | null
+  pm_email: string | null
+  pm_phone: string | null
+  rf_engineer_name: string | null
+  rf_engineer_email: string | null
+  rf_engineer_phone: string | null
+  americloud_pm: string | null
+  americloud_rf: string | null
+  project_scope: string | null
+  project_template: string | null
+  created_at: string
+}
