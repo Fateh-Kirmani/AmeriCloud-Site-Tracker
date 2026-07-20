@@ -29,7 +29,7 @@ export default function ProjectsTable({ projects, currentSort, currentDir, hasAc
 
   function handleSort(col: string) {
     const newDir = currentSort === col && currentDir === 'asc' ? 'desc' : 'asc'
-    const params = new URLSearchParams()
+    const params = new URLSearchParams(window.location.search)
     params.set('sort', col)
     params.set('dir', newDir)
     router.push(`/?${params.toString()}`)

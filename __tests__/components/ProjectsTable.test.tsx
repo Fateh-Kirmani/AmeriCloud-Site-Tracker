@@ -84,6 +84,22 @@ describe('ProjectsTable', () => {
     expect(mockPush).toHaveBeenCalledWith(expect.stringContaining('sort=site_name'))
   })
 
+  it('sort click preserves existing filter params', () => {
+    window.history.pushState({}, '', '/?client=Verizon')
+    render(
+      <ProjectsTable
+        projects={[mockProject]}
+        currentSort="created_at"
+        currentDir="desc"
+      />
+    )
+    fireEvent.click(screen.getByRole('button', { name: /site name/i }))
+    const calledUrl = mockPush.mock.calls[0][0] as string
+    expect(calledUrl).toContain('client=Verizon')
+    expect(calledUrl).toContain('sort=site_name')
+    window.history.pushState({}, '', '/')
+  })
+
   it('shows edit link for each row', () => {
     render(
       <ProjectsTable
