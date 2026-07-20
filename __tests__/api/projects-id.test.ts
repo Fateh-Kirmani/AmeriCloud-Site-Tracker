@@ -4,8 +4,8 @@
 import { NextRequest } from 'next/server'
 import { PUT, DELETE } from '@/app/api/projects/[id]/route'
 
-const mockSingle = jest.fn()
-const mockSelect = jest.fn(() => ({ single: mockSingle }))
+const mockMaybeSingle = jest.fn()
+const mockSelect = jest.fn(() => ({ maybeSingle: mockMaybeSingle }))
 const mockUpdate = jest.fn(() => ({ select: mockSelect }))
 const mockEqUpdate = jest.fn(() => ({ select: mockSelect }))
 const mockEqDelete = jest.fn()
@@ -47,8 +47,8 @@ describe('PUT /api/projects/[id]', () => {
 
   it('returns 200 with updated project', async () => {
     const updated = { id: 'test-id', ...validBody, created_at: '2026-07-20T00:00:00Z' }
-    mockSingle.mockResolvedValue({ data: updated, error: null })
-    mockSelect.mockReturnValue({ single: mockSingle })
+    mockMaybeSingle.mockResolvedValue({ data: updated, error: null })
+    mockSelect.mockReturnValue({ maybeSingle: mockMaybeSingle })
     mockEqUpdate.mockReturnValue({ select: mockSelect })
     mockUpdate.mockReturnValue({ eq: mockEqUpdate })
     mockSupabase.from.mockReturnValue({ update: mockUpdate })
@@ -61,8 +61,8 @@ describe('PUT /api/projects/[id]', () => {
   })
 
   it('returns 404 when row not found', async () => {
-    mockSingle.mockResolvedValue({ data: null, error: null })
-    mockSelect.mockReturnValue({ single: mockSingle })
+    mockMaybeSingle.mockResolvedValue({ data: null, error: null })
+    mockSelect.mockReturnValue({ maybeSingle: mockMaybeSingle })
     mockEqUpdate.mockReturnValue({ select: mockSelect })
     mockUpdate.mockReturnValue({ eq: mockEqUpdate })
     mockSupabase.from.mockReturnValue({ update: mockUpdate })
@@ -73,8 +73,8 @@ describe('PUT /api/projects/[id]', () => {
   })
 
   it('returns 500 on Supabase error', async () => {
-    mockSingle.mockResolvedValue({ data: null, error: { message: 'DB error' } })
-    mockSelect.mockReturnValue({ single: mockSingle })
+    mockMaybeSingle.mockResolvedValue({ data: null, error: { message: 'DB error' } })
+    mockSelect.mockReturnValue({ maybeSingle: mockMaybeSingle })
     mockEqUpdate.mockReturnValue({ select: mockSelect })
     mockUpdate.mockReturnValue({ eq: mockEqUpdate })
     mockSupabase.from.mockReturnValue({ update: mockUpdate })

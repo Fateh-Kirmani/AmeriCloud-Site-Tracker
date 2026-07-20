@@ -31,7 +31,7 @@ export async function PUT(
       .update(cleanedData)
       .eq('id', id)
       .select()
-      .single()
+      .maybeSingle()
 
     if (error) {
       console.error('[PUT /api/projects/[id]] Supabase error:', error.message)

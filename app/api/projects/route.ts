@@ -60,7 +60,9 @@ export async function GET(request: NextRequest) {
     let query = supabase.from('projects').select('*')
 
     if (search) {
-      query = query.ilike('site_name', `%${search}%`)
+      query = query.or(
+        `site_name.ilike.%${search}%,client.ilike.%${search}%,address.ilike.%${search}%,client_site_id.ilike.%${search}%,americloud_site_id.ilike.%${search}%`
+      )
     }
     if (client) {
       query = query.eq('client', client)

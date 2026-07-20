@@ -44,7 +44,11 @@ export default async function HomePage({
     const supabase = createSupabaseClient()
     let query = supabase.from('projects').select('*')
 
-    if (search) query = query.ilike('site_name', `%${search}%`)
+    if (search) {
+      query = query.or(
+        `site_name.ilike.%${search}%,client.ilike.%${search}%,address.ilike.%${search}%,client_site_id.ilike.%${search}%,americloud_site_id.ilike.%${search}%`
+      )
+    }
     if (client) query = query.eq('client', client)
     if (template) query = query.eq('project_template', template)
     if (pm) query = query.eq('americloud_pm', pm)

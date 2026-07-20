@@ -12,12 +12,6 @@ type Props = {
   hasActiveFilters?: boolean
 }
 
-const SORT_COLUMNS: { key: string; label: string }[] = [
-  { key: 'site_name', label: 'Site Name' },
-  { key: 'client', label: 'Client' },
-  { key: 'americloud_site_id', label: 'AmeriCloud Site ID' },
-]
-
 function SortIcon({ active, dir }: { active: boolean; dir: 'asc' | 'desc' }) {
   if (!active) return <span className="ml-1 text-[#1E3A5F]">↕</span>
   return <span className="ml-1 text-[#C8102E]">{dir === 'asc' ? '↑' : '↓'}</span>
@@ -75,23 +69,41 @@ export default function ProjectsTable({ projects, currentSort, currentDir, hasAc
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-[#0D1F35] border-b border-[#1E3A5F]">
-                {SORT_COLUMNS.map(({ key, label }) => (
-                  <th key={key} className="text-left px-4 py-3">
-                    <button
-                      onClick={() => handleSort(key)}
-                      className="flex items-center text-[#94A3B8] uppercase text-xs tracking-wider font-medium hover:text-white transition-colors"
-                      aria-label={label}
-                    >
-                      {label}
-                      <SortIcon active={currentSort === key} dir={currentDir} />
-                    </button>
-                  </th>
-                ))}
+                <th className="text-left px-4 py-3">
+                  <button
+                    onClick={() => handleSort('site_name')}
+                    className="flex items-center text-[#94A3B8] uppercase text-xs tracking-wider font-medium hover:text-white transition-colors"
+                    aria-label="Site Name"
+                  >
+                    Site Name
+                    <SortIcon active={currentSort === 'site_name'} dir={currentDir} />
+                  </button>
+                </th>
+                <th className="text-left px-4 py-3">
+                  <button
+                    onClick={() => handleSort('client')}
+                    className="flex items-center text-[#94A3B8] uppercase text-xs tracking-wider font-medium hover:text-white transition-colors"
+                    aria-label="Client"
+                  >
+                    Client
+                    <SortIcon active={currentSort === 'client'} dir={currentDir} />
+                  </button>
+                </th>
                 <th className="text-left px-4 py-3 text-[#94A3B8] uppercase text-xs tracking-wider font-medium">
                   Address
                 </th>
                 <th className="text-left px-4 py-3 text-[#94A3B8] uppercase text-xs tracking-wider font-medium">
                   Client Site ID
+                </th>
+                <th className="text-left px-4 py-3">
+                  <button
+                    onClick={() => handleSort('americloud_site_id')}
+                    className="flex items-center text-[#94A3B8] uppercase text-xs tracking-wider font-medium hover:text-white transition-colors"
+                    aria-label="AmeriCloud Site ID"
+                  >
+                    AmeriCloud Site ID
+                    <SortIcon active={currentSort === 'americloud_site_id'} dir={currentDir} />
+                  </button>
                 </th>
                 <th className="px-4 py-3 text-[#94A3B8] uppercase text-xs tracking-wider font-medium text-right">
                   Actions
@@ -108,9 +120,9 @@ export default function ProjectsTable({ projects, currentSort, currentDir, hasAc
                 >
                   <td className="px-4 py-3 text-white font-medium">{project.site_name}</td>
                   <td className="px-4 py-3 text-[#94A3B8]">{project.client}</td>
-                  <td className="px-4 py-3 text-[#94A3B8]">{project.americloud_site_id}</td>
                   <td className="px-4 py-3 text-[#94A3B8]">{project.address}</td>
                   <td className="px-4 py-3 text-[#94A3B8]">{project.client_site_id ?? '—'}</td>
+                  <td className="px-4 py-3 text-[#94A3B8]">{project.americloud_site_id}</td>
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-end gap-2">
                       <Link

@@ -46,6 +46,12 @@ describe('ProjectsTable', () => {
     expect(screen.getByText('100 Main St, Springfield')).toBeInTheDocument()
     expect(screen.getByText('ATT-999')).toBeInTheDocument()
     expect(screen.getByText('AC-001')).toBeInTheDocument()
+
+    // Verify column order: Address must appear before AmeriCloud Site ID
+    const cells = screen.getAllByRole('cell')
+    const addressIdx = cells.findIndex(c => c.textContent === '100 Main St, Springfield')
+    const amerIdx = cells.findIndex(c => c.textContent === 'AC-001')
+    expect(addressIdx).toBeLessThan(amerIdx)
   })
 
   it('shows empty state when no projects and no filters', () => {
