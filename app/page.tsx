@@ -59,7 +59,8 @@ export default async function HomePage({
     } else {
       projects = (data as Project[]) ?? []
     }
-  } catch {
+  } catch (err) {
+    console.error('[HomePage] Unexpected error fetching projects:', err)
     fetchError = true
   }
 
