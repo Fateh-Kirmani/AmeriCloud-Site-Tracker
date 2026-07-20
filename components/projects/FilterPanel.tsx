@@ -1,5 +1,5 @@
 'use client'
-import { useState, useRef } from 'react'
+import { useState, useRef, MutableRefObject } from 'react'
 import { useRouter } from 'next/navigation'
 
 const CLIENTS = ['AT&T', 'Verizon', 'T-Mobile', 'Crown Castle', 'SBA Communications']
@@ -71,7 +71,7 @@ export default function FilterPanel({
     key: string,
     value: string,
     setter: (v: string) => void,
-    ref: React.MutableRefObject<string>
+    ref: MutableRefObject<string>
   ) {
     ref.current = value
     setter(value)
