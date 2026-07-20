@@ -6,9 +6,7 @@ const CLIENTS = ['AT&T', 'Verizon', 'T-Mobile', 'Crown Castle', 'SBA Communicati
 const AMERICLOUD_PMS = ['John Smith', 'Sarah Johnson', 'Mike Davis']
 const PROJECT_TEMPLATES = ['Standard Cell Tower', 'Small Cell', 'DAS', 'Rooftop']
 
-function selectClass() {
-  return 'bg-[#0B1929] border border-[#1E3A5F] rounded-md px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#C8102E] focus:border-transparent w-full'
-}
+const SELECT_CLASS = 'bg-[#0B1929] border border-[#1E3A5F] rounded-md px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#C8102E] focus:border-transparent w-full'
 
 type Props = {
   initialSearch: string
@@ -29,23 +27,39 @@ export default function FilterPanel({
 }: Props) {
   const router = useRouter()
   const [search, setSearch] = useState(initialSearch)
+  const searchRef = useRef(initialSearch)
   const [client, setClient] = useState(initialClient)
+  const clientRef = useRef(initialClient)
   const [template, setTemplate] = useState(initialTemplate)
+  const templateRef = useRef(initialTemplate)
   const [pm, setPm] = useState(initialPm)
+  const pmRef = useRef(initialPm)
   const [from, setFrom] = useState(initialFrom)
+  const fromRef = useRef(initialFrom)
   const [to, setTo] = useState(initialTo)
+  const toRef = useRef(initialTo)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   function buildUrl(overrides: Record<string, string>) {
     const params = new URLSearchParams()
-    const values: Record<string, string> = { search, client, template, pm, from, to, ...overrides }
+    const values: Record<string, string> = {
+      search: searchRef.current,
+      client: clientRef.current,
+      template: templateRef.current,
+      pm: pmRef.current,
+      from: fromRef.current,
+      to: toRef.current,
+      ...overrides,
+    }
     Object.entries(values).forEach(([k, v]) => {
       if (v) params.set(k, v)
     })
-    return `/?${params.toString()}` === '/?' ? '/' : `/?${params.toString()}`
+    const qs = params.toString()
+    return qs ? `/?${qs}` : '/'
   }
 
   function handleSearch(value: string) {
+    searchRef.current = value
     setSearch(value)
     if (debounceRef.current) clearTimeout(debounceRef.current)
     debounceRef.current = setTimeout(() => {
@@ -53,12 +67,24 @@ export default function FilterPanel({
     }, 300)
   }
 
-  function handleDropdown(key: string, value: string, setter: (v: string) => void) {
+  function handleDropdown(
+    key: string,
+    value: string,
+    setter: (v: string) => void,
+    ref: React.MutableRefObject<string>
+  ) {
+    ref.current = value
     setter(value)
     router.push(buildUrl({ [key]: value }))
   }
 
   function clearFilters() {
+    searchRef.current = ''
+    clientRef.current = ''
+    templateRef.current = ''
+    pmRef.current = ''
+    fromRef.current = ''
+    toRef.current = ''
     setSearch('')
     setClient('')
     setTemplate('')
@@ -87,8 +113,8 @@ export default function FilterPanel({
           <select
             aria-label="Client"
             value={client}
-            onChange={(e) => handleDropdown('client', e.target.value, setClient)}
-            className={selectClass()}
+            onChange={(e) => handleDropdown('client', e.target.value, setClient, clientRef)}
+            className={SELECT_CLASS}
           >
             <option value="">All Clients</option>
             {CLIENTS.map((c) => <option key={c} value={c}>{c}</option>)}
@@ -99,8 +125,8 @@ export default function FilterPanel({
           <select
             aria-label="Template"
             value={template}
-            onChange={(e) => handleDropdown('template', e.target.value, setTemplate)}
-            className={selectClass()}
+            onChange={(e) => handleDropdown('template', e.target.value, setTemplate, templateRef)}
+            className={SELECT_CLASS}
           >
             <option value="">All Templates</option>
             {PROJECT_TEMPLATES.map((t) => <option key={t} value={t}>{t}</option>)}
@@ -111,8 +137,8 @@ export default function FilterPanel({
           <select
             aria-label="AmeriCloud PM"
             value={pm}
-            onChange={(e) => handleDropdown('pm', e.target.value, setPm)}
-            className={selectClass()}
+            onChange={(e) => handleDropdown('pm', e.target.value, setPm, pmRef)}
+            className={SELECT_CLASS}
           >
             <option value="">All PMs</option>
             {AMERICLOUD_PMS.map((p) => <option key={p} value={p}>{p}</option>)}
@@ -137,7 +163,7 @@ export default function FilterPanel({
           <input
             type="date"
             value={from}
-            onChange={(e) => handleDropdown('from', e.target.value, setFrom)}
+            onChange={(e) => handleDropdown('from', e.target.value, setFrom, fromRef)}
             className="bg-[#0B1929] border border-[#1E3A5F] rounded-md px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#C8102E] focus:border-transparent w-full"
           />
         </div>
@@ -146,7 +172,7 @@ export default function FilterPanel({
           <input
             type="date"
             value={to}
-            onChange={(e) => handleDropdown('to', e.target.value, setTo)}
+            onChange={(e) => handleDropdown('to', e.target.value, setTo, toRef)}
             className="bg-[#0B1929] border border-[#1E3A5F] rounded-md px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#C8102E] focus:border-transparent w-full"
           />
         </div>

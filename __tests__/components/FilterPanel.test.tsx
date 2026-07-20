@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
 import FilterPanel from '@/components/projects/FilterPanel'
 
 const mockPush = jest.fn()
@@ -60,5 +60,24 @@ describe('FilterPanel', () => {
     render(<FilterPanel {...defaultProps} initialSearch="site-x" initialClient="Verizon" />)
     expect(screen.getByPlaceholderText('Search projects...')).toHaveValue('site-x')
     expect(screen.getByRole('combobox', { name: /client/i })).toHaveValue('Verizon')
+  })
+
+  it('does not overwrite dropdown state when debounce fires after dropdown change', () => {
+    render(<FilterPanel {...defaultProps} />)
+    const searchInput = screen.getByPlaceholderText('Search projects...')
+    const clientSelect = screen.getByRole('combobox', { name: /client/i })
+
+    // Type in search (starts 300ms debounce)
+    fireEvent.change(searchInput, { target: { value: 'tower' } })
+    // Immediately change dropdown (fires URL update right away)
+    fireEvent.change(clientSelect, { target: { value: 'Verizon' } })
+    // The dropdown push should contain client=Verizon
+    expect(mockPush).toHaveBeenLastCalledWith(expect.stringContaining('client=Verizon'))
+
+    // Now debounce fires — it should include BOTH search and client
+    jest.advanceTimersByTime(300)
+    const lastCall = mockPush.mock.calls[mockPush.mock.calls.length - 1][0]
+    expect(lastCall).toContain('search=tower')
+    expect(lastCall).toContain('client=Verizon')
   })
 })
