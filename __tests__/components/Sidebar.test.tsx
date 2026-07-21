@@ -49,7 +49,7 @@ describe('Sidebar', () => {
   it('clicking the backdrop calls closeSidebar', () => {
     const closeSidebar = jest.fn()
     renderSidebar(true, closeSidebar)
-    fireEvent.click(document.querySelector('[aria-hidden="true"]')!)
+    fireEvent.click(screen.getByTestId('backdrop'))
     expect(closeSidebar).toHaveBeenCalled()
   })
 
@@ -76,6 +76,6 @@ describe('Sidebar', () => {
 
   it('backdrop is not rendered when closed', () => {
     renderSidebar(false)
-    expect(document.querySelector('[aria-hidden="true"]')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('backdrop')).not.toBeInTheDocument()
   })
 })
