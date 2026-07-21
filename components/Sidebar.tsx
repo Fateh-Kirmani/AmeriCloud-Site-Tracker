@@ -51,7 +51,7 @@ export default function Sidebar() {
     <>
       {sidebarOpen && (
         <div
-          className="fixed inset-0 z-50 bg-black/50"
+          className="fixed inset-0 z-40 bg-black/50"
           aria-hidden="true"
           data-testid="backdrop"
           onClick={closeSidebar}
@@ -60,6 +60,9 @@ export default function Sidebar() {
       <nav
         role="navigation"
         aria-label="Main navigation"
+        aria-hidden={!sidebarOpen}
+        data-testid="sidebar-nav"
+        {...(sidebarOpen ? {} : ({ inert: true } as any))}
         className={`fixed top-0 left-0 bottom-0 w-[260px] z-[60] bg-[#112240] border-r border-[#1E3A5F] flex flex-col transition-transform duration-300 ease-in-out ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
@@ -73,6 +76,7 @@ export default function Sidebar() {
             style={{ height: '30px', width: 'auto' }}
           />
           <button
+            type="button"
             onClick={closeSidebar}
             aria-label="Close navigation"
             className="text-[#94A3B8] hover:text-white transition-colors p-1"

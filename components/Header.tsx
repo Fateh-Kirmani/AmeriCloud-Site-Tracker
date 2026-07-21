@@ -9,6 +9,7 @@ export default function Header() {
     <header className="fixed top-0 left-0 right-0 z-50 bg-[#0B1929] border-b border-[#1E3A5F] shadow-lg">
       <div className="max-w-7xl mx-auto px-6 py-3 flex items-center gap-4">
         <button
+          type="button"
           onClick={toggleSidebar}
           aria-label={sidebarOpen ? 'Close navigation' : 'Open navigation'}
           aria-expanded={sidebarOpen}

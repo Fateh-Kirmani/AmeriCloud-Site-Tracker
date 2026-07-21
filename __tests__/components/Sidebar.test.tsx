@@ -20,7 +20,7 @@ describe('Sidebar', () => {
 
   it('drawer has -translate-x-full when closed', () => {
     renderSidebar(false)
-    const nav = screen.getByRole('navigation', { name: /main navigation/i })
+    const nav = screen.getByTestId('sidebar-nav')
     expect(nav.className).toContain('-translate-x-full')
   })
 
