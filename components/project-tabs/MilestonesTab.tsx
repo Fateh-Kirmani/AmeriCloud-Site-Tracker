@@ -128,7 +128,7 @@ export default function MilestonesTab({ projectId }: { projectId: string }) {
           <span className="flex-[2] text-[#94A3B8] text-xs uppercase tracking-wider font-medium">Milestone Details</span>
           <span className="flex-1 text-[#94A3B8] text-xs uppercase tracking-wider font-medium">Owner</span>
           <span className="flex-1 text-[#94A3B8] text-xs uppercase tracking-wider font-medium">Projected Date</span>
-          <span className="flex-1 text-[#94A3B8] text-xs uppercase tracking-wider font-medium">Actualized Date</span>
+          <span className="flex-1 text-[#94A3B8] text-xs uppercase tracking-wider font-medium">Actual Date</span>
           <span className="flex-1 text-[#94A3B8] text-xs uppercase tracking-wider font-medium">Notes</span>
           <span className="w-4 shrink-0" />
         </div>

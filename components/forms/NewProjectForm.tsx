@@ -1,5 +1,6 @@
 'use client'
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { projectSchema, ProjectFormData } from '@/types/project'
@@ -21,11 +22,13 @@ function Field({
   label,
   error,
   required,
+  hint,
   children,
 }: {
   label: string
   error?: string
   required?: boolean
+  hint?: string
   children: React.ReactNode
 }) {
   return (
@@ -37,12 +40,14 @@ function Field({
         </span>
         {children}
       </label>
+      {hint && <p className="text-[#94A3B8] text-xs">{hint}</p>}
       {error && <p className="text-[#C8102E] text-xs mt-0.5">{error}</p>}
     </div>
   )
 }
 
 export default function NewProjectForm() {
+  const router = useRouter()
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -62,8 +67,8 @@ export default function NewProjectForm() {
         body: JSON.stringify(data),
       })
       if (!res.ok) throw new Error()
-      reset()
-      setToast({ message: 'Project created successfully', type: 'success' })
+      const created = await res.json()
+      router.push(`/projects/${created.id}/edit`)
     } catch {
       setToast({ message: 'Something went wrong. Please try again.', type: 'error' })
     } finally {
@@ -129,8 +134,8 @@ export default function NewProjectForm() {
           </FormCard>
         </div>
 
-        {/* Row 2: Customer Contact (full width) */}
-        <FormCard title="Customer Contact">
+        {/* Row 2: Client Contact (full width) */}
+        <FormCard title="Client Contact">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div>
               <h3 className="text-white font-semibold text-sm mb-3">PM Information</h3>
@@ -216,7 +221,7 @@ export default function NewProjectForm() {
 
           <FormCard title="Project Details">
             <div className="space-y-4">
-              <Field label="Project Template">
+              <Field label="Project Template" hint="Classifies the project type — does not auto-populate milestones.">
                 <select {...register('project_template')} className={inputClass(false)}>
                   <option value="">Select template...</option>
                   {PROJECT_TEMPLATES.map((t) => (

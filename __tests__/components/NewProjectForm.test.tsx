@@ -5,6 +5,9 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import NewProjectForm from '@/components/forms/NewProjectForm'
 
+const mockPush = jest.fn()
+jest.mock('next/navigation', () => ({ useRouter: () => ({ push: mockPush }) }))
+
 global.fetch = jest.fn()
 
 beforeEach(() => {
@@ -16,7 +19,7 @@ describe('NewProjectForm', () => {
     render(<NewProjectForm />)
     expect(screen.getByText(/site information/i)).toBeInTheDocument()
     expect(screen.getByText(/client & ids/i)).toBeInTheDocument()
-    expect(screen.getByText(/customer contact/i)).toBeInTheDocument()
+    expect(screen.getByText(/client contact/i)).toBeInTheDocument()
     expect(screen.getByText(/americloud team/i)).toBeInTheDocument()
     expect(screen.getByText(/project details/i)).toBeInTheDocument()
   })
@@ -54,7 +57,7 @@ describe('NewProjectForm', () => {
     })
   })
 
-  it('shows success toast after successful submission', async () => {
+  it('redirects to edit page after successful submission', async () => {
     ;(global.fetch as jest.Mock).mockResolvedValue({
       ok: true,
       json: async () => ({ id: 'abc-123' }),
@@ -72,7 +75,7 @@ describe('NewProjectForm', () => {
     await userEvent.click(screen.getByRole('button', { name: /create project/i }))
 
     await waitFor(() => {
-      expect(screen.getByText('Project created successfully')).toBeInTheDocument()
+      expect(mockPush).toHaveBeenCalledWith('/projects/abc-123/edit')
     })
   })
 
