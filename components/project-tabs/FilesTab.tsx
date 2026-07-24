@@ -13,6 +13,14 @@ function TrashIcon() {
   )
 }
 
+function DownloadIcon() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+      <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
+    </svg>
+  )
+}
+
 export default function FilesTab({ projectId }: { projectId: string }) {
   const [files, setFiles] = useState<ProjectFile[]>([])
   const [loading, setLoading] = useState(true)
@@ -58,6 +66,21 @@ export default function FilesTab({ projectId }: { projectId: string }) {
     }
   }
 
+  async function handleDownload(url: string, fileName: string) {
+    try {
+      const res = await fetch(url)
+      const blob = await res.blob()
+      const objectUrl = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = objectUrl
+      a.download = fileName
+      a.click()
+      URL.revokeObjectURL(objectUrl)
+    } catch {
+      // silent fail — file is still accessible via the name link
+    }
+  }
+
   async function handleDelete(fileId: string) {
     try {
       const res = await fetch(`/api/projects/${projectId}/files/${fileId}`, { method: 'DELETE' })
@@ -83,6 +106,7 @@ export default function FilesTab({ projectId }: { projectId: string }) {
               <th className="pb-2 font-medium pr-4">Type</th>
               <th className="pb-2 font-medium pr-4">Uploaded</th>
               <th className="pb-2" />
+              <th className="pb-2" />
             </tr>
           </thead>
           <tbody className="divide-y divide-[#1E3A5F]">
@@ -96,6 +120,11 @@ export default function FilesTab({ projectId }: { projectId: string }) {
                 <td className="py-3 pr-4 text-[#94A3B8]">{f.file_type ?? '—'}</td>
                 <td className="py-3 pr-4 text-[#94A3B8]">
                   {new Date(f.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                </td>
+                <td className="py-3 pr-2">
+                  <button type="button" onClick={() => handleDownload(f.url ?? '#', f.file_name)} disabled={!f.url} aria-label="Download file" className="text-[#94A3B8] hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
+                    <DownloadIcon />
+                  </button>
                 </td>
                 <td className="py-3">
                   <button type="button" onClick={() => handleDelete(f.id)} aria-label="Delete file" className="text-[#94A3B8] hover:text-[#C8102E] transition-colors">

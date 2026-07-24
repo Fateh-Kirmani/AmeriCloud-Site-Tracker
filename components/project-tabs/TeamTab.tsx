@@ -90,6 +90,15 @@ export default function TeamTab({ projectId }: { projectId: string }) {
   return (
     <div className="space-y-3">
       {rows.length === 0 && <p className="text-[#94A3B8] text-sm">No team members added yet.</p>}
+      {rows.length > 0 && (
+        <div className="flex gap-2 items-center px-1">
+          <span className="flex-1 text-[#94A3B8] text-xs uppercase tracking-wider font-medium">Name</span>
+          <span className="flex-1 text-[#94A3B8] text-xs uppercase tracking-wider font-medium">Task</span>
+          <span className="flex-1 text-[#94A3B8] text-xs uppercase tracking-wider font-medium">Date From</span>
+          <span className="flex-1 text-[#94A3B8] text-xs uppercase tracking-wider font-medium">Date To</span>
+          <span className="w-4 shrink-0" />
+        </div>
+      )}
       {rows.map((row, i) => (
         <div key={i} className="flex gap-2 items-center">
           <input value={row.name} onChange={(e) => updateRow(i, 'name', e.target.value)} className={`${inputClass} flex-1`} placeholder="Name" />
