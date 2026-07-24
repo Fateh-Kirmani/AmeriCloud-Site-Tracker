@@ -100,7 +100,7 @@ describe('PUT /api/projects/[id]/milestones', () => {
 
   it('deletes, upserts, and returns updated milestones', async () => {
     const savedMilestones = [{ id: 'ms-new', project_id: PROJECT_ID, details: 'New', owner: null, projected_date: null, actualized_date: null, notes: null, created_at: '2026-07-24T00:00:00Z' }]
-    const mockDelete = jest.fn().mockReturnValue({ in: jest.fn().mockResolvedValue({ error: null }) })
+    const mockDelete = jest.fn().mockReturnValue({ eq: jest.fn().mockReturnValue({ in: jest.fn().mockResolvedValue({ error: null }) }) })
     const mockUpsert = jest.fn().mockResolvedValue({ error: null })
     ;(createSupabaseClient as jest.Mock).mockReturnValue({
       from: jest.fn().mockImplementation((table: string) => {

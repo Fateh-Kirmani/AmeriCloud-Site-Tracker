@@ -25,7 +25,7 @@ export default function FilesTab({ projectId }: { projectId: string }) {
 
   useEffect(() => {
     fetch(`/api/projects/${projectId}/files`)
-      .then((r) => r.json())
+      .then((r) => { if (!r.ok) throw new Error(); return r.json() })
       .then(setFiles)
       .catch(() => setFetchError(true))
       .finally(() => setLoading(false))
@@ -60,7 +60,8 @@ export default function FilesTab({ projectId }: { projectId: string }) {
 
   async function handleDelete(fileId: string) {
     try {
-      await fetch(`/api/projects/${projectId}/files/${fileId}`, { method: 'DELETE' })
+      const res = await fetch(`/api/projects/${projectId}/files/${fileId}`, { method: 'DELETE' })
+      if (!res.ok) throw new Error()
       setFiles((f) => f.filter((x) => x.id !== fileId))
     } catch {
       // file stays in list on error

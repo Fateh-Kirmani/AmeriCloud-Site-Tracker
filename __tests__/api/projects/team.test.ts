@@ -100,7 +100,7 @@ describe('PUT /api/projects/[id]/team', () => {
 
   it('deletes and upserts team members, returns updated list', async () => {
     const saved = [{ id: 'tm-new', project_id: PROJECT_ID, name: 'Alice', task_milestone_id: null, date_from: null, date_to: null, created_at: '2026-07-24T00:00:00Z' }]
-    const mockDelete = jest.fn().mockReturnValue({ in: jest.fn().mockResolvedValue({ error: null }) })
+    const mockDelete = jest.fn().mockReturnValue({ eq: jest.fn().mockReturnValue({ in: jest.fn().mockResolvedValue({ error: null }) }) })
     const mockUpsert = jest.fn().mockResolvedValue({ error: null })
     ;(createSupabaseClient as jest.Mock).mockReturnValue({
       from: jest.fn().mockImplementation((table: string) => {

@@ -109,6 +109,7 @@ export default function EditProjectForm({ project }: { project: Project }) {
           {TABS.map((tab) => (
             <button
               key={tab}
+              id={`tab-${tab.toLowerCase().replace(/ /g, '-')}`}
               type="button"
               role="tab"
               aria-selected={activeTab === tab}

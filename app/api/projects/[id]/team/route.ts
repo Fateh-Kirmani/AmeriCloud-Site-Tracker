@@ -62,7 +62,7 @@ export async function PUT(
     if (!project) return NextResponse.json({ error: 'Project not found' }, { status: 404 })
 
     if (deleted_ids.length > 0) {
-      const { error } = await supabase.from('team_members').delete().in('id', deleted_ids)
+      const { error } = await supabase.from('team_members').delete().eq('project_id', id).in('id', deleted_ids)
       if (error) {
         console.error('[PUT /api/projects/[id]/team] delete error:', error.message)
         return NextResponse.json({ error: 'Database error' }, { status: 500 })
