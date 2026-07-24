@@ -4,6 +4,9 @@ const optionalEmail = z
   .union([z.string().email('Invalid email format'), z.literal('')])
   .optional()
 
+export const STATUS_VALUES = ['Active', 'On Hold', 'Completed', 'Cancelled'] as const
+export type ProjectStatus = (typeof STATUS_VALUES)[number]
+
 export const projectSchema = z.object({
   site_name: z.string().trim().min(1, 'Site name is required'),
   address: z.string().trim().min(1, 'Address is required'),
@@ -20,6 +23,7 @@ export const projectSchema = z.object({
   americloud_rf: z.string().optional(),
   project_scope: z.string().optional(),
   project_template: z.string().optional(),
+  status: z.enum(STATUS_VALUES).default('Active'),
 })
 
 export type ProjectFormData = z.infer<typeof projectSchema>
@@ -42,4 +46,5 @@ export type Project = {
   project_scope: string | null
   project_template: string | null
   created_at: string
+  status: string
 }

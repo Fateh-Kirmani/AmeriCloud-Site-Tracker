@@ -17,6 +17,22 @@ function SortIcon({ active, dir }: { active: boolean; dir: 'asc' | 'desc' }) {
   return <span className="ml-1 text-[#C8102E]">{dir === 'asc' ? '↑' : '↓'}</span>
 }
 
+const STATUS_STYLES: Record<string, string> = {
+  'Active': 'bg-green-500/20 text-green-400 border border-green-500/30',
+  'On Hold': 'bg-amber-500/20 text-amber-400 border border-amber-500/30',
+  'Completed': 'bg-blue-500/20 text-blue-400 border border-blue-500/30',
+  'Cancelled': 'bg-[#1E3A5F] text-[#94A3B8] border border-[#334E6A]',
+}
+
+function StatusBadge({ status }: { status: string }) {
+  const cls = STATUS_STYLES[status] ?? STATUS_STYLES['Active']
+  return (
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${cls}`}>
+      {status ?? 'Active'}
+    </span>
+  )
+}
+
 export default function ProjectsTable({ projects, currentSort, currentDir, hasActiveFilters }: Props) {
   const router = useRouter()
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; siteName: string } | null>(null)
@@ -65,7 +81,41 @@ export default function ProjectsTable({ projects, currentSort, currentDir, hasAc
         />
       )}
       <div className="bg-[#112240] border border-[#1E3A5F] rounded-xl overflow-hidden">
-        <div className="overflow-x-auto">
+
+        {/* Mobile cards — shown below sm */}
+        <div className="block sm:hidden divide-y divide-[#1E3A5F]">
+          {projects.map((project) => (
+            <div key={project.id} className="p-4">
+              <div className="flex items-start justify-between gap-2 mb-1.5">
+                <p className="text-white font-medium leading-snug">{project.site_name}</p>
+                <StatusBadge status={project.status ?? 'Active'} />
+              </div>
+              <p className="text-[#94A3B8] text-sm">{project.client}</p>
+              <p className="text-[#94A3B8] text-xs mt-1 line-clamp-1">{project.address}</p>
+              <p className="text-[#94A3B8] text-xs mt-0.5">{project.americloud_site_id}</p>
+              <div className="flex gap-2 mt-3">
+                <Link
+                  href={`/projects/${project.id}/edit`}
+                  aria-label={`Edit ${project.site_name}`}
+                  className="flex-1 text-center border border-[#1E3A5F] text-[#94A3B8] hover:text-white hover:border-white rounded-md py-1.5 text-xs font-medium transition-colors"
+                >
+                  Edit
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => setDeleteTarget({ id: project.id, siteName: project.site_name })}
+                  aria-label={`Delete ${project.site_name}`}
+                  className="flex-1 border border-[#1E3A5F] text-[#94A3B8] hover:text-[#C8102E] hover:border-[#C8102E] rounded-md py-1.5 text-xs font-medium transition-colors"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Desktop table — shown sm and up */}
+        <div className="hidden sm:block overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-[#0D1F35] border-b border-[#1E3A5F]">
@@ -78,6 +128,9 @@ export default function ProjectsTable({ projects, currentSort, currentDir, hasAc
                     Site Name
                     <SortIcon active={currentSort === 'site_name'} dir={currentDir} />
                   </button>
+                </th>
+                <th className="text-left px-4 py-3 text-[#94A3B8] uppercase text-xs tracking-wider font-medium">
+                  Status
                 </th>
                 <th className="text-left px-4 py-3">
                   <button
@@ -119,6 +172,7 @@ export default function ProjectsTable({ projects, currentSort, currentDir, hasAc
                   }`}
                 >
                   <td className="px-4 py-3 text-white font-medium">{project.site_name}</td>
+                  <td className="px-4 py-3"><StatusBadge status={project.status ?? 'Active'} /></td>
                   <td className="px-4 py-3 text-[#94A3B8]">{project.client}</td>
                   <td className="px-4 py-3 text-[#94A3B8]">{project.address}</td>
                   <td className="px-4 py-3 text-[#94A3B8]">{project.client_site_id ?? '—'}</td>
@@ -154,6 +208,7 @@ export default function ProjectsTable({ projects, currentSort, currentDir, hasAc
             </tbody>
           </table>
         </div>
+
       </div>
     </>
   )

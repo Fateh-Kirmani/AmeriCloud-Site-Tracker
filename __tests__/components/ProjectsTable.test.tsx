@@ -28,6 +28,7 @@ const mockProject: Project = {
   project_scope: null,
   project_template: 'Standard Cell Tower',
   created_at: '2026-07-20T00:00:00Z',
+  status: 'Active',
 }
 
 describe('ProjectsTable', () => {
@@ -41,13 +42,15 @@ describe('ProjectsTable', () => {
         currentDir="desc"
       />
     )
-    expect(screen.getByText('Tower Alpha')).toBeInTheDocument()
-    expect(screen.getByText('AT&T')).toBeInTheDocument()
-    expect(screen.getByText('100 Main St, Springfield')).toBeInTheDocument()
-    expect(screen.getByText('ATT-999')).toBeInTheDocument()
-    expect(screen.getByText('AC-001')).toBeInTheDocument()
+    // Both mobile card and desktop table render in jsdom (CSS not evaluated), so use getAllByText
+    expect(screen.getAllByText('Tower Alpha').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('AT&T').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('100 Main St, Springfield').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('ATT-999').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('AC-001').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('Active').length).toBeGreaterThan(0)
 
-    // Verify column order: Address must appear before AmeriCloud Site ID
+    // Column order: Address before AmeriCloud Site ID (table cells only)
     const cells = screen.getAllByRole('cell')
     const addressIdx = cells.findIndex(c => c.textContent === '100 Main St, Springfield')
     const amerIdx = cells.findIndex(c => c.textContent === 'AC-001')
@@ -114,7 +117,9 @@ describe('ProjectsTable', () => {
         currentDir="desc"
       />
     )
-    const editLink = screen.getByRole('link', { name: /edit tower alpha/i })
-    expect(editLink).toHaveAttribute('href', '/projects/abc-123/edit')
+    // Edit link appears in both mobile card and desktop table in jsdom
+    const editLinks = screen.getAllByRole('link', { name: /edit tower alpha/i })
+    expect(editLinks.length).toBeGreaterThan(0)
+    expect(editLinks[0]).toHaveAttribute('href', '/projects/abc-123/edit')
   })
 })

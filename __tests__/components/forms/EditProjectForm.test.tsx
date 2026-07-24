@@ -35,6 +35,7 @@ const mockProject: Project = {
   project_scope: null,
   project_template: null,
   created_at: '2026-07-24T00:00:00Z',
+  status: 'Active',
 }
 
 it('renders General Information tab by default', () => {

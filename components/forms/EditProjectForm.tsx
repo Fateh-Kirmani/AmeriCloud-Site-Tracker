@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useRouter } from 'next/navigation'
-import { projectSchema, ProjectFormData, Project } from '@/types/project'
+import { projectSchema, ProjectFormData, Project, STATUS_VALUES } from '@/types/project'
 import FormCard from '@/components/FormCard'
 import Toast from '@/components/Toast'
 import MilestonesTab from '@/components/project-tabs/MilestonesTab'
@@ -78,6 +78,7 @@ export default function EditProjectForm({ project }: { project: Project }) {
       americloud_rf: project.americloud_rf ?? '',
       project_scope: project.project_scope ?? '',
       project_template: project.project_template ?? '',
+      status: (project.status as (typeof STATUS_VALUES)[number]) ?? 'Active',
     },
   })
 
@@ -166,7 +167,7 @@ export default function EditProjectForm({ project }: { project: Project }) {
             </div>
 
             {/* Row 2 */}
-            <FormCard title="Customer Contact">
+            <FormCard title="Client Contact">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div>
                   <h3 className="text-white font-semibold text-sm mb-3">PM Information</h3>
@@ -207,6 +208,11 @@ export default function EditProjectForm({ project }: { project: Project }) {
               </FormCard>
               <FormCard title="Project Details">
                 <div className="space-y-4">
+                  <Field label="Status">
+                    <select {...register('status')} className={inputClass(false)}>
+                      {STATUS_VALUES.map((s) => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                  </Field>
                   <Field label="Project Template">
                     <select {...register('project_template')} className={inputClass(false)}>
                       <option value="">Select template...</option>

@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { projectSchema, ProjectFormData } from '@/types/project'
+import { projectSchema, ProjectFormData, STATUS_VALUES } from '@/types/project'
 import FormCard from '@/components/FormCard'
 import Toast from '@/components/Toast'
 
@@ -221,6 +221,13 @@ export default function NewProjectForm() {
 
           <FormCard title="Project Details">
             <div className="space-y-4">
+              <Field label="Status">
+                <select {...register('status')} className={inputClass(false)}>
+                  {STATUS_VALUES.map((s) => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
+              </Field>
               <Field label="Project Template" hint="Classifies the project type — does not auto-populate milestones.">
                 <select {...register('project_template')} className={inputClass(false)}>
                   <option value="">Select template...</option>
