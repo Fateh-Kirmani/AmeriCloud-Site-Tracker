@@ -65,7 +65,7 @@ export default function EditProjectForm({ project }: { project: Project }) {
     defaultValues: {
       site_name: project.site_name,
       address: project.address,
-      americloud_site_id: project.americloud_site_id,
+      americloud_site_id: project.americloud_site_id ?? '',
       client: project.client,
       client_site_id: project.client_site_id ?? '',
       pm_name: project.pm_name ?? '',
@@ -140,14 +140,14 @@ export default function EditProjectForm({ project }: { project: Project }) {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <FormCard title="Site Information">
                 <div className="space-y-4">
-                  <Field label="Site Name" required error={errors.site_name?.message}>
+                  <Field label="Project Name" required error={errors.site_name?.message}>
                     <input {...register('site_name')} className={inputClass(!!errors.site_name)} placeholder="Enter site name" />
                   </Field>
                   <Field label="Address" required error={errors.address?.message}>
                     <input {...register('address')} className={inputClass(!!errors.address)} placeholder="Enter address" />
                   </Field>
-                  <Field label="AmeriCloud Site ID" required error={errors.americloud_site_id?.message}>
-                    <input {...register('americloud_site_id')} className={inputClass(!!errors.americloud_site_id)} placeholder="e.g. AC-2024-001" />
+                  <Field label="Project Code">
+                    <input {...register('americloud_site_id')} className={inputClass(false)} placeholder="e.g. AC-2024-001" />
                   </Field>
                 </div>
               </FormCard>

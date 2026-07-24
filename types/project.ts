@@ -8,9 +8,9 @@ export const STATUS_VALUES = ['Active', 'On Hold', 'Completed', 'Cancelled'] as 
 export type ProjectStatus = (typeof STATUS_VALUES)[number]
 
 export const projectSchema = z.object({
-  site_name: z.string().trim().min(1, 'Site name is required'),
+  site_name: z.string().trim().min(1, 'Project name is required'),
   address: z.string().trim().min(1, 'Address is required'),
-  americloud_site_id: z.string().trim().min(1, 'AmeriCloud Site ID is required'),
+  americloud_site_id: z.string().optional(),
   client: z.string().trim().min(1, 'Client is required'),
   client_site_id: z.string().optional(),
   pm_name: z.string().optional(),
@@ -32,7 +32,7 @@ export type Project = {
   id: string
   site_name: string
   address: string
-  americloud_site_id: string
+  americloud_site_id: string | null
   client: string
   client_site_id: string | null
   pm_name: string | null

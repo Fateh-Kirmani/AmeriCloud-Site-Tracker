@@ -41,7 +41,7 @@ const mockProject: Project = {
 it('renders General Information tab by default', () => {
   render(<EditProjectForm project={mockProject} />)
   expect(screen.getByRole('tab', { name: 'General Information' })).toHaveAttribute('aria-selected', 'true')
-  expect(screen.getByLabelText(/site name/i)).toBeInTheDocument()
+  expect(screen.getByLabelText(/project name/i)).toBeInTheDocument()
   expect(screen.queryByTestId('milestones-tab')).not.toBeInTheDocument()
 })
 
@@ -50,7 +50,7 @@ it('switches to Milestones tab when clicked', () => {
   fireEvent.click(screen.getByRole('tab', { name: 'Milestones' }))
   expect(screen.getByTestId('milestones-tab')).toBeInTheDocument()
   expect(screen.getByRole('tab', { name: 'Milestones' })).toHaveAttribute('aria-selected', 'true')
-  expect(screen.queryByLabelText(/site name/i)).not.toBeInTheDocument()
+  expect(screen.queryByLabelText(/project name/i)).not.toBeInTheDocument()
 })
 
 it('switches to Files tab when clicked', () => {

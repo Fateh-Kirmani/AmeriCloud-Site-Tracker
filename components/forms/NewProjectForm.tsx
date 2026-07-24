@@ -85,7 +85,7 @@ export default function NewProjectForm() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <FormCard title="Site Information">
             <div className="space-y-4">
-              <Field label="Site Name" required error={errors.site_name?.message}>
+              <Field label="Project Name" required error={errors.site_name?.message}>
                 <input
                   {...register('site_name')}
                   className={inputClass(!!errors.site_name)}
@@ -99,10 +99,10 @@ export default function NewProjectForm() {
                   placeholder="Enter address"
                 />
               </Field>
-              <Field label="AmeriCloud Site ID" required error={errors.americloud_site_id?.message}>
+              <Field label="Project Code">
                 <input
                   {...register('americloud_site_id')}
-                  className={inputClass(!!errors.americloud_site_id)}
+                  className={inputClass(false)}
                   placeholder="e.g. AC-2024-001"
                 />
               </Field>

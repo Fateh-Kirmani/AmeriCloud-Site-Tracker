@@ -20,8 +20,8 @@ describe('projectSchema', () => {
     expect(projectSchema.safeParse({ ...validBase, address: '' }).success).toBe(false)
   })
 
-  it('rejects empty americloud_site_id', () => {
-    expect(projectSchema.safeParse({ ...validBase, americloud_site_id: '' }).success).toBe(false)
+  it('accepts empty americloud_site_id (field is optional)', () => {
+    expect(projectSchema.safeParse({ ...validBase, americloud_site_id: '' }).success).toBe(true)
   })
 
   it('rejects empty client', () => {

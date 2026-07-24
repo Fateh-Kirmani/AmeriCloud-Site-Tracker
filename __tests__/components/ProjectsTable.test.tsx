@@ -45,16 +45,15 @@ describe('ProjectsTable', () => {
     // Both mobile card and desktop table render in jsdom (CSS not evaluated), so use getAllByText
     expect(screen.getAllByText('Tower Alpha').length).toBeGreaterThan(0)
     expect(screen.getAllByText('AT&T').length).toBeGreaterThan(0)
-    expect(screen.getAllByText('100 Main St, Springfield').length).toBeGreaterThan(0)
-    expect(screen.getAllByText('ATT-999').length).toBeGreaterThan(0)
     expect(screen.getAllByText('AC-001').length).toBeGreaterThan(0)
     expect(screen.getAllByText('Active').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('Standard Cell Tower').length).toBeGreaterThan(0)
 
-    // Column order: Address before AmeriCloud Site ID (table cells only)
+    // Column order: Project Name before Client in table cells
     const cells = screen.getAllByRole('cell')
-    const addressIdx = cells.findIndex(c => c.textContent === '100 Main St, Springfield')
-    const amerIdx = cells.findIndex(c => c.textContent === 'AC-001')
-    expect(addressIdx).toBeLessThan(amerIdx)
+    const nameIdx = cells.findIndex(c => c.textContent === 'Tower Alpha')
+    const clientIdx = cells.findIndex(c => c.textContent === 'AT&T')
+    expect(nameIdx).toBeLessThan(clientIdx)
   })
 
   it('shows empty state when no projects and no filters', () => {
@@ -89,7 +88,7 @@ describe('ProjectsTable', () => {
         currentDir="desc"
       />
     )
-    fireEvent.click(screen.getByRole('button', { name: /site name/i }))
+    fireEvent.click(screen.getByRole('button', { name: /project name/i }))
     expect(mockPush).toHaveBeenCalledWith(expect.stringContaining('sort=site_name'))
   })
 
@@ -102,7 +101,7 @@ describe('ProjectsTable', () => {
         currentDir="desc"
       />
     )
-    fireEvent.click(screen.getByRole('button', { name: /site name/i }))
+    fireEvent.click(screen.getByRole('button', { name: /project name/i }))
     const calledUrl = mockPush.mock.calls[0][0] as string
     expect(calledUrl).toContain('client=Verizon')
     expect(calledUrl).toContain('sort=site_name')

@@ -8,11 +8,12 @@ jest.mock('next/navigation', () => ({
 
 const defaultProps = {
   initialSearch: '',
+  initialProjectCode: '',
   initialClient: '',
   initialTemplate: '',
   initialPm: '',
-  initialFrom: '',
-  initialTo: '',
+  initialStatus: '',
+  initialDate: '',
 }
 
 describe('FilterPanel', () => {
@@ -30,7 +31,7 @@ describe('FilterPanel', () => {
     expect(screen.getByPlaceholderText('Search projects...')).toBeInTheDocument()
     expect(screen.getByRole('combobox', { name: /client/i })).toBeInTheDocument()
     expect(screen.getByRole('combobox', { name: /template/i })).toBeInTheDocument()
-    expect(screen.getByRole('combobox', { name: /americloud pm/i })).toBeInTheDocument()
+    expect(screen.getByRole('combobox', { name: /^pm$/i })).toBeInTheDocument()
   })
 
   it('debounces search input by 300ms', async () => {
@@ -51,7 +52,7 @@ describe('FilterPanel', () => {
 
   it('renders Clear filters button and navigates to / on click', () => {
     render(<FilterPanel {...defaultProps} initialSearch="tower" />)
-    const btn = screen.getByRole('button', { name: /clear filters/i })
+    const btn = screen.getByRole('button', { name: /^clear$/i })
     fireEvent.click(btn)
     expect(mockPush).toHaveBeenCalledWith('/')
   })

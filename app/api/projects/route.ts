@@ -39,17 +39,18 @@ export async function POST(request: NextRequest) {
   }
 }
 
-const VALID_SORT_COLUMNS = ['site_name', 'client', 'americloud_site_id', 'created_at'] as const
+const VALID_SORT_COLUMNS = ['site_name', 'americloud_site_id', 'status', 'client', 'created_at'] as const
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const search = searchParams.get('search') ?? ''
+    const projectCode = searchParams.get('project_code') ?? ''
     const client = searchParams.get('client') ?? ''
     const template = searchParams.get('template') ?? ''
     const pm = searchParams.get('pm') ?? ''
-    const from = searchParams.get('from') ?? ''
-    const to = searchParams.get('to') ?? ''
+    const status = searchParams.get('status') ?? ''
+    const date = searchParams.get('date') ?? ''
     const sortParam = searchParams.get('sort') ?? 'created_at'
     const dir = searchParams.get('dir') === 'asc' ? 'asc' : 'desc'
     const sort = VALID_SORT_COLUMNS.includes(sortParam as typeof VALID_SORT_COLUMNS[number])
@@ -61,24 +62,15 @@ export async function GET(request: NextRequest) {
 
     if (search) {
       query = query.or(
-        `site_name.ilike.%${search}%,client.ilike.%${search}%,address.ilike.%${search}%,client_site_id.ilike.%${search}%,americloud_site_id.ilike.%${search}%`
+        `site_name.ilike.%${search}%,client.ilike.%${search}%,americloud_site_id.ilike.%${search}%,americloud_pm.ilike.%${search}%`
       )
     }
-    if (client) {
-      query = query.eq('client', client)
-    }
-    if (template) {
-      query = query.eq('project_template', template)
-    }
-    if (pm) {
-      query = query.eq('americloud_pm', pm)
-    }
-    if (from) {
-      query = query.gte('created_at', from)
-    }
-    if (to) {
-      query = query.lte('created_at', to)
-    }
+    if (projectCode) query = query.ilike('americloud_site_id', `%${projectCode}%`)
+    if (client) query = query.eq('client', client)
+    if (template) query = query.eq('project_template', template)
+    if (pm) query = query.eq('americloud_pm', pm)
+    if (status) query = query.eq('status', status)
+    if (date) query = query.gte('created_at', date)
 
     const { data, error } = await query.order(sort, { ascending: dir === 'asc' })
 

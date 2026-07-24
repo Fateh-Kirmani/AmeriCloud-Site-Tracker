@@ -91,8 +91,20 @@ export default function ProjectsTable({ projects, currentSort, currentDir, hasAc
                 <StatusBadge status={project.status ?? 'Active'} />
               </div>
               <p className="text-[#94A3B8] text-sm">{project.client}</p>
-              <p className="text-[#94A3B8] text-xs mt-1 line-clamp-1">{project.address}</p>
-              <p className="text-[#94A3B8] text-xs mt-0.5">{project.americloud_site_id}</p>
+              {project.americloud_site_id && (
+                <p className="text-[#94A3B8] text-xs mt-1">{project.americloud_site_id}</p>
+              )}
+              <div className="flex gap-3 mt-1">
+                {project.project_template && (
+                  <p className="text-[#94A3B8] text-xs">{project.project_template}</p>
+                )}
+                {project.americloud_pm && (
+                  <p className="text-[#94A3B8] text-xs">{project.americloud_pm}</p>
+                )}
+              </div>
+              <p className="text-[#94A3B8] text-xs mt-0.5">
+                {new Date(project.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+              </p>
               <div className="flex gap-2 mt-3">
                 <Link
                   href={`/projects/${project.id}/edit`}
@@ -123,14 +135,24 @@ export default function ProjectsTable({ projects, currentSort, currentDir, hasAc
                   <button
                     onClick={() => handleSort('site_name')}
                     className="flex items-center text-[#94A3B8] uppercase text-xs tracking-wider font-medium hover:text-white transition-colors"
-                    aria-label="Site Name"
+                    aria-label="Project Name"
                   >
-                    Site Name
+                    Project Name
                     <SortIcon active={currentSort === 'site_name'} dir={currentDir} />
                   </button>
                 </th>
                 <th className="text-left px-4 py-3 text-[#94A3B8] uppercase text-xs tracking-wider font-medium">
-                  Status
+                  Project Code
+                </th>
+                <th className="text-left px-4 py-3">
+                  <button
+                    onClick={() => handleSort('status')}
+                    className="flex items-center text-[#94A3B8] uppercase text-xs tracking-wider font-medium hover:text-white transition-colors"
+                    aria-label="Status"
+                  >
+                    Status
+                    <SortIcon active={currentSort === 'status'} dir={currentDir} />
+                  </button>
                 </th>
                 <th className="text-left px-4 py-3">
                   <button
@@ -143,19 +165,19 @@ export default function ProjectsTable({ projects, currentSort, currentDir, hasAc
                   </button>
                 </th>
                 <th className="text-left px-4 py-3 text-[#94A3B8] uppercase text-xs tracking-wider font-medium">
-                  Address
+                  Template
                 </th>
                 <th className="text-left px-4 py-3 text-[#94A3B8] uppercase text-xs tracking-wider font-medium">
-                  Client Site ID
+                  PM
                 </th>
                 <th className="text-left px-4 py-3">
                   <button
-                    onClick={() => handleSort('americloud_site_id')}
+                    onClick={() => handleSort('created_at')}
                     className="flex items-center text-[#94A3B8] uppercase text-xs tracking-wider font-medium hover:text-white transition-colors"
-                    aria-label="AmeriCloud Site ID"
+                    aria-label="Date"
                   >
-                    AmeriCloud Site ID
-                    <SortIcon active={currentSort === 'americloud_site_id'} dir={currentDir} />
+                    Date
+                    <SortIcon active={currentSort === 'created_at'} dir={currentDir} />
                   </button>
                 </th>
                 <th className="px-4 py-3 text-[#94A3B8] uppercase text-xs tracking-wider font-medium text-right">
@@ -172,11 +194,14 @@ export default function ProjectsTable({ projects, currentSort, currentDir, hasAc
                   }`}
                 >
                   <td className="px-4 py-3 text-white font-medium">{project.site_name}</td>
+                  <td className="px-4 py-3 text-[#94A3B8]">{project.americloud_site_id ?? '—'}</td>
                   <td className="px-4 py-3"><StatusBadge status={project.status ?? 'Active'} /></td>
                   <td className="px-4 py-3 text-[#94A3B8]">{project.client}</td>
-                  <td className="px-4 py-3 text-[#94A3B8]">{project.address}</td>
-                  <td className="px-4 py-3 text-[#94A3B8]">{project.client_site_id ?? '—'}</td>
-                  <td className="px-4 py-3 text-[#94A3B8]">{project.americloud_site_id}</td>
+                  <td className="px-4 py-3 text-[#94A3B8]">{project.project_template ?? '—'}</td>
+                  <td className="px-4 py-3 text-[#94A3B8]">{project.americloud_pm ?? '—'}</td>
+                  <td className="px-4 py-3 text-[#94A3B8]">
+                    {new Date(project.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                  </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-end gap-2">
                       <Link

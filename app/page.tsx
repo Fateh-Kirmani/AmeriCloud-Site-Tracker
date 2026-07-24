@@ -4,15 +4,16 @@ import FilterPanel from '@/components/projects/FilterPanel'
 import ProjectsTable from '@/components/projects/ProjectsTable'
 import { Project } from '@/types/project'
 
-const VALID_SORT_COLUMNS = ['site_name', 'client', 'americloud_site_id', 'created_at'] as const
+const VALID_SORT_COLUMNS = ['site_name', 'americloud_site_id', 'status', 'client', 'created_at'] as const
 
 type SearchParams = {
   search?: string
+  project_code?: string
   client?: string
   template?: string
   pm?: string
-  from?: string
-  to?: string
+  status?: string
+  date?: string
   sort?: string
   dir?: string
 }
@@ -24,18 +25,19 @@ export default async function HomePage({
 }) {
   const sp = await searchParams
   const search = sp.search ?? ''
+  const projectCode = sp.project_code ?? ''
   const client = sp.client ?? ''
   const template = sp.template ?? ''
   const pm = sp.pm ?? ''
-  const from = sp.from ?? ''
-  const to = sp.to ?? ''
+  const status = sp.status ?? ''
+  const date = sp.date ?? ''
   const sortParam = sp.sort ?? 'created_at'
   const dir = sp.dir === 'asc' ? 'asc' : 'desc'
   const sort = VALID_SORT_COLUMNS.includes(sortParam as typeof VALID_SORT_COLUMNS[number])
     ? sortParam
     : 'created_at'
 
-  const hasActiveFilters = !!(search || client || template || pm || from || to)
+  const hasActiveFilters = !!(search || projectCode || client || template || pm || status || date)
 
   let projects: Project[] = []
   let fetchError = false
@@ -46,14 +48,15 @@ export default async function HomePage({
 
     if (search) {
       query = query.or(
-        `site_name.ilike.%${search}%,client.ilike.%${search}%,address.ilike.%${search}%,client_site_id.ilike.%${search}%,americloud_site_id.ilike.%${search}%`
+        `site_name.ilike.%${search}%,client.ilike.%${search}%,americloud_site_id.ilike.%${search}%,americloud_pm.ilike.%${search}%`
       )
     }
+    if (projectCode) query = query.ilike('americloud_site_id', `%${projectCode}%`)
     if (client) query = query.eq('client', client)
     if (template) query = query.eq('project_template', template)
     if (pm) query = query.eq('americloud_pm', pm)
-    if (from) query = query.gte('created_at', from)
-    if (to) query = query.lte('created_at', to)
+    if (status) query = query.eq('status', status)
+    if (date) query = query.gte('created_at', date)
 
     const { data, error } = await query.order(sort, { ascending: dir === 'asc' })
 
@@ -87,11 +90,12 @@ export default async function HomePage({
 
       <FilterPanel
         initialSearch={search}
+        initialProjectCode={projectCode}
         initialClient={client}
         initialTemplate={template}
         initialPm={pm}
-        initialFrom={from}
-        initialTo={to}
+        initialStatus={status}
+        initialDate={date}
       />
 
       {fetchError ? (

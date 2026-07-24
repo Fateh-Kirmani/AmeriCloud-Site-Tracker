@@ -28,7 +28,7 @@ describe('NewProjectForm', () => {
     render(<NewProjectForm />)
     await userEvent.click(screen.getByRole('button', { name: /create project/i }))
     await waitFor(() => {
-      expect(screen.getByText('Site name is required')).toBeInTheDocument()
+      expect(screen.getByText('Project name is required')).toBeInTheDocument()
     })
   })
 
