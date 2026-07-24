@@ -22,7 +22,7 @@ const PROJECT_TEMPLATES = ['Standard Cell Tower', 'Small Cell', 'DAS', 'Rooftop'
 function inputClass(hasError: boolean) {
   return `w-full bg-[#0B1929] border ${
     hasError ? 'border-[#F87171]' : 'border-[#1E3A5F]'
-  } rounded-md px-3 py-2.5 text-white text-sm placeholder-[#4A6FA5] focus:outline-none focus:ring-2 focus:ring-[#C8102E] focus:border-transparent transition-colors`
+  } rounded-md px-3 py-2.5 text-white text-sm placeholder-[#8899AA] focus:outline-none focus:ring-2 focus:ring-[#C8102E] focus:border-transparent transition-colors`
 }
 
 function Field({

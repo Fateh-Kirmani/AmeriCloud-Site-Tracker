@@ -106,7 +106,7 @@ export default function FilterPanel({
             placeholder="Search projects..."
             value={search}
             onChange={(e) => handleSearch(e.target.value)}
-            className="bg-[#0B1929] border border-[#1E3A5F] rounded-md px-3 py-2 text-white text-sm placeholder-[#4A6FA5] focus:outline-none focus:ring-2 focus:ring-[#C8102E] focus:border-transparent w-full"
+            className="bg-[#0B1929] border border-[#1E3A5F] rounded-md px-3 py-2 text-white text-sm placeholder-[#8899AA] focus:outline-none focus:ring-2 focus:ring-[#C8102E] focus:border-transparent w-full"
           />
         </div>
 
