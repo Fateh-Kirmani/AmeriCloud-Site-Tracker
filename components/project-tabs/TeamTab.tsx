@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { TeamMemberRow, MilestoneOption } from '@/types/milestone'
 
 const inputClass =
@@ -21,6 +21,13 @@ export default function TeamTab({ projectId }: { projectId: string }) {
   const [saving, setSaving] = useState(false)
   const [fetchError, setFetchError] = useState(false)
   const [saveError, setSaveError] = useState(false)
+  const [showUndo, setShowUndo] = useState(false)
+  const pendingDeleteRef = useRef<{ row: TeamMemberRow; index: number } | null>(null)
+  const pendingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    return () => { if (pendingTimerRef.current) clearTimeout(pendingTimerRef.current) }
+  }, [])
 
   useEffect(() => {
     fetch(`/api/projects/${projectId}/team`)
@@ -49,11 +56,40 @@ export default function TeamTab({ projectId }: { projectId: string }) {
 
   function deleteRow(index: number) {
     const row = rows[index]
-    if (row.id) setDeletedIds((ids) => [...ids, row.id!])
     setRows((r) => r.filter((_, i) => i !== index))
+    if (pendingDeleteRef.current) {
+      if (pendingTimerRef.current) clearTimeout(pendingTimerRef.current)
+      if (pendingDeleteRef.current.row.id) setDeletedIds((ids) => [...ids, pendingDeleteRef.current!.row.id!])
+    }
+    pendingDeleteRef.current = { row, index }
+    setShowUndo(true)
+    pendingTimerRef.current = setTimeout(() => {
+      if (pendingDeleteRef.current?.row.id) setDeletedIds((ids) => [...ids, pendingDeleteRef.current!.row.id!])
+      pendingDeleteRef.current = null
+      pendingTimerRef.current = null
+      setShowUndo(false)
+    }, 5000)
+  }
+
+  function undoDelete() {
+    if (!pendingDeleteRef.current) return
+    if (pendingTimerRef.current) clearTimeout(pendingTimerRef.current)
+    const { row, index } = pendingDeleteRef.current
+    setRows((r) => { const next = [...r]; next.splice(Math.min(index, r.length), 0, row); return next })
+    pendingDeleteRef.current = null
+    pendingTimerRef.current = null
+    setShowUndo(false)
   }
 
   async function save() {
+    let extraIds: string[] = []
+    if (pendingDeleteRef.current) {
+      if (pendingTimerRef.current) clearTimeout(pendingTimerRef.current)
+      if (pendingDeleteRef.current.row.id) extraIds = [pendingDeleteRef.current.row.id]
+      pendingDeleteRef.current = null
+      pendingTimerRef.current = null
+      setShowUndo(false)
+    }
     setSaving(true)
     setSaveError(false)
     try {
@@ -62,7 +98,7 @@ export default function TeamTab({ projectId }: { projectId: string }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           team_members: rows.map((r) => ({ ...r, task_milestone_id: r.task_milestone_id || null })),
-          deleted_ids: deletedIds,
+          deleted_ids: [...deletedIds, ...extraIds],
         }),
       })
       if (!res.ok) throw new Error()
@@ -119,6 +155,14 @@ export default function TeamTab({ projectId }: { projectId: string }) {
           </button>
         </div>
       ))}
+      {showUndo && (
+        <div className="flex items-center justify-between bg-[#1E3A5F] rounded-lg px-4 py-2 text-sm">
+          <span className="text-[#94A3B8]">Team member deleted.</span>
+          <button type="button" onClick={undoDelete} className="text-[#C8102E] hover:text-white font-medium ml-4 transition-colors">
+            Undo
+          </button>
+        </div>
+      )}
       <div className="flex items-center justify-between pt-2">
         <button type="button" onClick={addRow} className="text-[#94A3B8] hover:text-white text-sm font-medium transition-colors">
           + Add Team Member

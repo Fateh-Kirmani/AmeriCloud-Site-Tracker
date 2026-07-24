@@ -30,11 +30,13 @@ function Field({
 }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="text-[#94A3B8] text-xs uppercase tracking-wider font-medium">
-        {label}
-        {required && <span className="text-[#C8102E] ml-1">*</span>}
+      <label className="flex flex-col gap-1.5">
+        <span className="text-[#94A3B8] text-xs uppercase tracking-wider font-medium">
+          {label}
+          {required && <span className="text-[#C8102E] ml-1">*</span>}
+        </span>
+        {children}
       </label>
-      {children}
       {error && <p className="text-[#C8102E] text-xs mt-0.5">{error}</p>}
     </div>
   )

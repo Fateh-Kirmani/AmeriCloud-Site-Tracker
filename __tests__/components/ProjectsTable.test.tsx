@@ -114,7 +114,7 @@ describe('ProjectsTable', () => {
         currentDir="desc"
       />
     )
-    const editLink = screen.getByRole('link', { name: /edit abc-123/i })
+    const editLink = screen.getByRole('link', { name: /edit tower alpha/i })
     expect(editLink).toHaveAttribute('href', '/projects/abc-123/edit')
   })
 })

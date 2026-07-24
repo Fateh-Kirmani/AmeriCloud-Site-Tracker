@@ -30,6 +30,7 @@ export default function FilesTab({ projectId }: { projectId: string }) {
   const [fileType, setFileType] = useState('')
   const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState(false)
+  const [deleteError, setDeleteError] = useState(false)
 
   useEffect(() => {
     fetch(`/api/projects/${projectId}/files`)
@@ -82,12 +83,13 @@ export default function FilesTab({ projectId }: { projectId: string }) {
   }
 
   async function handleDelete(fileId: string) {
+    setDeleteError(false)
     try {
       const res = await fetch(`/api/projects/${projectId}/files/${fileId}`, { method: 'DELETE' })
       if (!res.ok) throw new Error()
       setFiles((f) => f.filter((x) => x.id !== fileId))
     } catch {
-      // file stays in list on error
+      setDeleteError(true)
     }
   }
 
@@ -137,6 +139,7 @@ export default function FilesTab({ projectId }: { projectId: string }) {
         </table>
       )}
 
+      {deleteError && <p className="text-[#C8102E] text-xs">Failed to delete file. Please try again.</p>}
       <button type="button" onClick={() => setShowModal(true)} className="text-[#94A3B8] hover:text-white text-sm font-medium transition-colors">
         + Upload File
       </button>

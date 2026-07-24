@@ -127,7 +127,7 @@ export default function ProjectsTable({ projects, currentSort, currentDir, hasAc
                     <div className="flex items-center justify-end gap-2">
                       <Link
                         href={`/projects/${project.id}/edit`}
-                        aria-label={`Edit ${project.id}`}
+                        aria-label={`Edit ${project.site_name}`}
                         className="text-[#94A3B8] hover:text-white transition-colors p-1.5 rounded hover:bg-[#112240]"
                       >
                         <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -137,7 +137,7 @@ export default function ProjectsTable({ projects, currentSort, currentDir, hasAc
                       </Link>
                       <button
                         onClick={() => setDeleteTarget({ id: project.id, siteName: project.site_name })}
-                        aria-label={`Delete ${project.id}`}
+                        aria-label={`Delete ${project.site_name}`}
                         className="text-[#94A3B8] hover:text-[#C8102E] transition-colors p-1.5 rounded hover:bg-[#112240]"
                       >
                         <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

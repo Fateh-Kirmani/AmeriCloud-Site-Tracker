@@ -102,6 +102,7 @@ export default function FilterPanel({
         <div className="xl:col-span-2">
           <input
             type="text"
+            aria-label="Search projects"
             placeholder="Search projects..."
             value={search}
             onChange={(e) => handleSearch(e.target.value)}
@@ -159,8 +160,9 @@ export default function FilterPanel({
 
       <div className="grid grid-cols-2 gap-3 mt-3 sm:grid-cols-4 lg:w-1/2">
         <div>
-          <label className="text-[#94A3B8] text-xs uppercase tracking-wider block mb-1">From</label>
+          <label htmlFor="filter-from" className="text-[#94A3B8] text-xs uppercase tracking-wider block mb-1">From</label>
           <input
+            id="filter-from"
             type="date"
             value={from}
             onChange={(e) => handleDropdown('from', e.target.value, setFrom, fromRef)}
@@ -168,8 +170,9 @@ export default function FilterPanel({
           />
         </div>
         <div>
-          <label className="text-[#94A3B8] text-xs uppercase tracking-wider block mb-1">To</label>
+          <label htmlFor="filter-to" className="text-[#94A3B8] text-xs uppercase tracking-wider block mb-1">To</label>
           <input
+            id="filter-to"
             type="date"
             value={to}
             onChange={(e) => handleDropdown('to', e.target.value, setTo, toRef)}
