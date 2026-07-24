@@ -58,6 +58,23 @@ describe('GET /api/projects/[id]/team', () => {
     expect(body.milestones).toHaveLength(1)
     expect(body.milestones[0].details).toBe('Phase 1')
   })
+
+  it('returns 500 when milestones query fails', async () => {
+    ;(createSupabaseClient as jest.Mock).mockReturnValue({
+      from: jest.fn().mockImplementation((table: string) => {
+        if (table === 'projects') {
+          return { select: () => ({ eq: () => ({ maybeSingle: () => Promise.resolve({ data: { id: PROJECT_ID }, error: null }) }) }) }
+        }
+        if (table === 'team_members') {
+          return { select: () => ({ eq: () => ({ order: () => Promise.resolve({ data: [], error: null }) }) }) }
+        }
+        // milestones table fails
+        return { select: () => ({ eq: () => ({ order: () => Promise.resolve({ data: null, error: { message: 'DB error' } }) }) }) }
+      }),
+    })
+    const res = await GET(makeGetRequest(), makeParams())
+    expect(res.status).toBe(500)
+  })
 })
 
 describe('PUT /api/projects/[id]/team', () => {

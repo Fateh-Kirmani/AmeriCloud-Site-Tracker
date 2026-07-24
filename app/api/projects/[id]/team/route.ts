@@ -20,8 +20,9 @@ export async function GET(
       supabase.from('milestones').select('id, details').eq('project_id', id).order('created_at', { ascending: true }),
     ])
 
-    if (teamResult.error) {
-      console.error('[GET /api/projects/[id]/team]', teamResult.error.message)
+    if (teamResult.error || milestonesResult.error) {
+      const msg = teamResult.error?.message ?? milestonesResult.error?.message
+      console.error('[GET /api/projects/[id]/team]', msg)
       return NextResponse.json({ error: 'Database error' }, { status: 500 })
     }
 
