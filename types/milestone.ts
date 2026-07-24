@@ -1,0 +1,62 @@
+export type Milestone = {
+  id: string
+  project_id: string
+  details: string | null
+  owner: string | null
+  projected_date: string | null
+  actualized_date: string | null
+  notes: string | null
+  created_at: string
+}
+
+export type MilestoneRow = {
+  id?: string
+  details: string
+  owner: string
+  projected_date: string
+  actualized_date: string
+  notes: string
+}
+
+export type MilestonesSavePayload = {
+  milestones: MilestoneRow[]
+  deleted_ids: string[]
+}
+
+export type MilestoneOption = {
+  id: string
+  details: string | null
+}
+
+export type TeamMember = {
+  id: string
+  project_id: string
+  name: string | null
+  task_milestone_id: string | null
+  date_from: string | null
+  date_to: string | null
+  created_at: string
+}
+
+export type TeamMemberRow = {
+  id?: string
+  name: string
+  task_milestone_id: string | null
+  date_from: string
+  date_to: string
+}
+
+export type TeamSavePayload = {
+  team_members: TeamMemberRow[]
+  deleted_ids: string[]
+}
+
+export type ProjectFile = {
+  id: string
+  project_id: string
+  file_name: string
+  file_type: string | null
+  storage_path: string
+  created_at: string
+  url: string | null
+}
