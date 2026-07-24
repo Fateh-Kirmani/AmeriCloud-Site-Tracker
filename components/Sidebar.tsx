@@ -95,13 +95,15 @@ export default function Sidebar() {
                 key={href}
                 href={href}
                 onClick={closeSidebar}
-                className={`flex items-center gap-3 px-4 py-3 text-sm font-medium transition-colors border-l-4 ${
+                className={`flex items-center gap-3 px-4 py-3 text-sm font-medium transition-colors ${
                   isActive
-                    ? 'border-[#C8102E] bg-[#0B1929] text-white'
-                    : 'border-transparent text-[#94A3B8] hover:bg-[#1E3A5F] hover:text-white'
+                    ? 'bg-[#0B1929] text-white'
+                    : 'text-[#94A3B8] hover:bg-[#1E3A5F] hover:text-white'
                 }`}
               >
-                {icon}
+                <span className={isActive ? 'text-[#C8102E]' : ''} aria-hidden="true">
+                  {icon}
+                </span>
                 {label}
               </Link>
             )

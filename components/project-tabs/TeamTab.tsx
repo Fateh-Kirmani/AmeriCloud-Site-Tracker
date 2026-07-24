@@ -121,7 +121,7 @@ export default function TeamTab({ projectId }: { projectId: string }) {
   }
 
   if (loading) return <p className="text-[#94A3B8] text-sm">Loading...</p>
-  if (fetchError) return <p className="text-[#C8102E] text-sm">Failed to load. Please refresh.</p>
+  if (fetchError) return <p className="text-[#F87171] text-sm">Failed to load. Please refresh.</p>
 
   return (
     <div className="space-y-3">
@@ -168,7 +168,7 @@ export default function TeamTab({ projectId }: { projectId: string }) {
           + Add Team Member
         </button>
         <div className="flex flex-col items-end gap-1">
-          {saveError && <p className="text-[#C8102E] text-xs">Failed to save. Please try again.</p>}
+          {saveError && <p className="text-[#F87171] text-xs">Failed to save. Please try again.</p>}
           <button type="button" onClick={save} disabled={saving} className="bg-[#C8102E] hover:bg-[#A50E25] disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold px-6 py-2.5 rounded-lg transition-colors text-sm uppercase tracking-widest">
             {saving ? 'Saving...' : 'Save Changes'}
           </button>

@@ -67,11 +67,12 @@ describe('Sidebar', () => {
     expect(closeSidebar).toHaveBeenCalled()
   })
 
-  it('active route gets accent border class', () => {
+  it('active route gets active background and icon accent', () => {
     mockPathname.mockReturnValue('/')
     renderSidebar(true)
     const link = screen.getByRole('link', { name: /^projects$/i })
-    expect(link.className).toContain('border-[#C8102E]')
+    expect(link.className).toContain('bg-[#0B1929]')
+    expect(link.className).toContain('text-white')
   })
 
   it('backdrop is not rendered when closed', () => {

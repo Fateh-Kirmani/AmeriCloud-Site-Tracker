@@ -14,7 +14,7 @@ const PROJECT_TEMPLATES = ['Standard Cell Tower', 'Small Cell', 'DAS', 'Rooftop'
 
 function inputClass(hasError: boolean) {
   return `w-full bg-[#0B1929] border ${
-    hasError ? 'border-[#C8102E]' : 'border-[#1E3A5F]'
+    hasError ? 'border-[#F87171]' : 'border-[#1E3A5F]'
   } rounded-md px-3 py-2.5 text-white text-sm placeholder-[#4A6FA5] focus:outline-none focus:ring-2 focus:ring-[#C8102E] focus:border-transparent transition-colors`
 }
 
@@ -41,7 +41,7 @@ function Field({
         {children}
       </label>
       {hint && <p className="text-[#94A3B8] text-xs">{hint}</p>}
-      {error && <p className="text-[#C8102E] text-xs mt-0.5">{error}</p>}
+      {error && <p className="text-[#F87171] text-xs mt-0.5">{error}</p>}
     </div>
   )
 }

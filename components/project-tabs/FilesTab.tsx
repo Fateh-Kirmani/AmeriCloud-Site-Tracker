@@ -94,7 +94,7 @@ export default function FilesTab({ projectId }: { projectId: string }) {
   }
 
   if (loading) return <p className="text-[#94A3B8] text-sm">Loading...</p>
-  if (fetchError) return <p className="text-[#C8102E] text-sm">Failed to load files. Please refresh.</p>
+  if (fetchError) return <p className="text-[#F87171] text-sm">Failed to load files. Please refresh.</p>
 
   return (
     <div className="space-y-4">
@@ -139,7 +139,7 @@ export default function FilesTab({ projectId }: { projectId: string }) {
         </table>
       )}
 
-      {deleteError && <p className="text-[#C8102E] text-xs">Failed to delete file. Please try again.</p>}
+      {deleteError && <p className="text-[#F87171] text-xs">Failed to delete file. Please try again.</p>}
       <button type="button" onClick={() => setShowModal(true)} className="text-[#94A3B8] hover:text-white text-sm font-medium transition-colors">
         + Upload File
       </button>
@@ -163,7 +163,7 @@ export default function FilesTab({ projectId }: { projectId: string }) {
                 <label className="text-[#94A3B8] text-xs uppercase tracking-wider font-medium block mb-1.5">Type</label>
                 <input value={fileType} onChange={(e) => setFileType(e.target.value)} className={inputClass} placeholder="e.g. Contract, Drawing, Report" />
               </div>
-              {uploadError && <p className="text-[#C8102E] text-xs">Upload failed. Please try again.</p>}
+              {uploadError && <p className="text-[#F87171] text-xs">Upload failed. Please try again.</p>}
             </div>
             <div className="flex gap-3 pt-2">
               <button type="button" onClick={closeModal} className="flex-1 border border-[#1E3A5F] text-[#94A3B8] hover:text-white hover:border-white font-semibold py-2.5 rounded-lg transition-colors text-sm uppercase tracking-widest">
