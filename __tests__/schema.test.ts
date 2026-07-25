@@ -5,6 +5,7 @@ const validBase = {
   address: '123 Main St',
   americloud_site_id: 'AC-001',
   client: 'AT&T',
+  status: 'Active' as const,
 }
 
 describe('projectSchema', () => {

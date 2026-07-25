@@ -23,7 +23,7 @@ export const projectSchema = z.object({
   americloud_rf: z.string().optional(),
   project_scope: z.string().optional(),
   project_template: z.string().optional(),
-  status: z.enum(STATUS_VALUES).default('Active'),
+  status: z.enum(STATUS_VALUES),
 })
 
 export type ProjectFormData = z.infer<typeof projectSchema>

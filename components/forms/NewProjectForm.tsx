@@ -56,7 +56,7 @@ export default function NewProjectForm() {
     handleSubmit,
     reset,
     formState: { errors },
-  } = useForm<ProjectFormData>({ resolver: zodResolver(projectSchema) })
+  } = useForm<ProjectFormData>({ resolver: zodResolver(projectSchema), defaultValues: { status: 'Active' } })
 
   const onSubmit = async (data: ProjectFormData) => {
     setIsSubmitting(true)
