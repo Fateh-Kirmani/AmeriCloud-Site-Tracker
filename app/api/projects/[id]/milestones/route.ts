@@ -66,8 +66,9 @@ export async function PUT(
     }
 
     if (milestones.length > 0) {
+      const { randomUUID } = await import('crypto')
       const rows = (milestones as Record<string, unknown>[]).map((m) => ({
-        ...(m.id ? { id: m.id } : {}),
+        id: (m.id as string) || randomUUID(),
         project_id: id,
         details: (m.details as string) || null,
         owner: (m.owner as string) || null,
