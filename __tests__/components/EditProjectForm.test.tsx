@@ -30,6 +30,7 @@ const mockProject: Project = {
   project_scope: null,
   project_template: null,
   created_at: '2026-07-20T00:00:00Z',
+  status: 'Active',
 }
 
 describe('EditProjectForm', () => {
@@ -49,7 +50,7 @@ describe('EditProjectForm', () => {
 
   it('pre-fills client dropdown from project', () => {
     render(<EditProjectForm project={mockProject} />)
-    expect(screen.getByRole('combobox', { name: /client/i })).toHaveValue('AT&T')
+    expect(screen.getByRole('combobox', { name: /client/i })).toHaveTextContent('AT&T')
   })
 
   it('shows success toast and redirects on successful submit', async () => {

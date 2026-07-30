@@ -14,6 +14,7 @@ const defaultProps = {
   initialPm: '',
   initialStatus: '',
   initialDate: '',
+  templates: [],
 }
 
 describe('FilterPanel', () => {

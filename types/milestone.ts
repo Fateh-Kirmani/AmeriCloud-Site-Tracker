@@ -60,3 +60,17 @@ export type ProjectFile = {
   created_at: string
   url: string | null
 }
+
+export type MilestoneTemplateItem = {
+  id: string
+  template_id: string
+  details: string | null
+  notes: string | null
+  sort_order: number
+}
+
+export type MilestoneTemplate = {
+  id: string
+  name: string
+  items: MilestoneTemplateItem[]
+}

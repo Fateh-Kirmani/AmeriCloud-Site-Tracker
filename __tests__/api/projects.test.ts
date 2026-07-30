@@ -21,6 +21,7 @@ const validBody = {
   address: '123 Main St',
   americloud_site_id: 'AC-001',
   client: 'AT&T',
+  status: 'Active',
 }
 
 function makeRequest(body: unknown) {

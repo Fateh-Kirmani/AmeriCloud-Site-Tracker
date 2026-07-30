@@ -42,11 +42,8 @@ describe('NewProjectForm', () => {
 
     await userEvent.type(screen.getByPlaceholderText('Enter site name'), 'Test Site')
     await userEvent.type(screen.getByPlaceholderText('Enter address'), '123 Main St')
-    await userEvent.type(screen.getByPlaceholderText('e.g. AC-2024-001'), 'AC-001')
-    await userEvent.selectOptions(
-      screen.getByRole('combobox', { name: /client/i }),
-      'AT&T'
-    )
+    await userEvent.click(screen.getByRole('combobox', { name: /client/i }))
+    await userEvent.click(await screen.findByRole('option', { name: 'AT&T' }))
     await userEvent.click(screen.getByRole('button', { name: /create project/i }))
 
     await waitFor(() => {
@@ -67,11 +64,8 @@ describe('NewProjectForm', () => {
 
     await userEvent.type(screen.getByPlaceholderText('Enter site name'), 'Test Site')
     await userEvent.type(screen.getByPlaceholderText('Enter address'), '123 Main St')
-    await userEvent.type(screen.getByPlaceholderText('e.g. AC-2024-001'), 'AC-001')
-    await userEvent.selectOptions(
-      screen.getByRole('combobox', { name: /client/i }),
-      'AT&T'
-    )
+    await userEvent.click(screen.getByRole('combobox', { name: /client/i }))
+    await userEvent.click(await screen.findByRole('option', { name: 'AT&T' }))
     await userEvent.click(screen.getByRole('button', { name: /create project/i }))
 
     await waitFor(() => {
@@ -86,11 +80,8 @@ describe('NewProjectForm', () => {
 
     await userEvent.type(screen.getByPlaceholderText('Enter site name'), 'Test Site')
     await userEvent.type(screen.getByPlaceholderText('Enter address'), '123 Main St')
-    await userEvent.type(screen.getByPlaceholderText('e.g. AC-2024-001'), 'AC-001')
-    await userEvent.selectOptions(
-      screen.getByRole('combobox', { name: /client/i }),
-      'AT&T'
-    )
+    await userEvent.click(screen.getByRole('combobox', { name: /client/i }))
+    await userEvent.click(await screen.findByRole('option', { name: 'AT&T' }))
     await userEvent.click(screen.getByRole('button', { name: /create project/i }))
 
     await waitFor(() => {

@@ -1,16 +1,16 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { useForm } from 'react-hook-form'
+import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { projectSchema, ProjectFormData, STATUS_VALUES } from '@/types/project'
 import FormCard from '@/components/FormCard'
 import Toast from '@/components/Toast'
+import ClientSelect from '@/components/forms/ClientSelect'
+import { generateProjectCode } from '@/lib/clients'
 
-const CLIENTS = ['AT&T', 'Verizon', 'T-Mobile', 'Crown Castle', 'SBA Communications']
 const AMERICLOUD_PMS = ['John Smith', 'Sarah Johnson', 'Mike Davis']
 const AMERICLOUD_RFS = ['Robert Chen', 'Lisa Park', 'David Wilson']
-const PROJECT_TEMPLATES = ['Standard Cell Tower', 'Small Cell', 'DAS', 'Rooftop']
 
 function inputClass(hasError: boolean) {
   return `w-full bg-[#0B1929] border ${
@@ -46,7 +46,7 @@ function Field({
   )
 }
 
-export default function NewProjectForm() {
+export default function NewProjectForm({ templates = [] }: { templates?: { id: string; name: string }[] }) {
   const router = useRouter()
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -55,8 +55,16 @@ export default function NewProjectForm() {
     register,
     handleSubmit,
     reset,
+    control,
+    watch,
+    setValue,
     formState: { errors },
   } = useForm<ProjectFormData>({ resolver: zodResolver(projectSchema), defaultValues: { status: 'Active' } })
+
+  const clientValue = watch('client')
+  useEffect(() => {
+    setValue('americloud_site_id', clientValue ? generateProjectCode(clientValue) : '')
+  }, [clientValue]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const onSubmit = async (data: ProjectFormData) => {
     setIsSubmitting(true)
@@ -102,8 +110,9 @@ export default function NewProjectForm() {
               <Field label="Project Code">
                 <input
                   {...register('americloud_site_id')}
-                  className={inputClass(false)}
-                  placeholder="e.g. AC-2024-001"
+                  readOnly
+                  className={inputClass(false) + ' cursor-not-allowed opacity-80'}
+                  placeholder="Auto-generated on client selection"
                 />
               </Field>
             </div>
@@ -112,16 +121,17 @@ export default function NewProjectForm() {
           <FormCard title="Client & IDs">
             <div className="space-y-4">
               <Field label="Client" required error={errors.client?.message}>
-                <select
-                  {...register('client')}
-                  aria-label="Client"
-                  className={inputClass(!!errors.client)}
-                >
-                  <option value="">Select client...</option>
-                  {CLIENTS.map((c) => (
-                    <option key={c} value={c}>{c}</option>
-                  ))}
-                </select>
+                <Controller
+                  name="client"
+                  control={control}
+                  render={({ field }) => (
+                    <ClientSelect
+                      value={field.value ?? ''}
+                      onChange={field.onChange}
+                      error={errors.client?.message}
+                    />
+                  )}
+                />
               </Field>
               <Field label="Client Site ID" error={errors.client_site_id?.message}>
                 <input
@@ -230,9 +240,9 @@ export default function NewProjectForm() {
               </Field>
               <Field label="Project Template" hint="Classifies the project type — does not auto-populate milestones.">
                 <select {...register('project_template')} className={inputClass(false)}>
-                  <option value="">Select template...</option>
-                  {PROJECT_TEMPLATES.map((t) => (
-                    <option key={t} value={t}>{t}</option>
+                  <option value="">No Template</option>
+                  {templates.map((t) => (
+                    <option key={t.id} value={t.name}>{t.name}</option>
                   ))}
                 </select>
               </Field>

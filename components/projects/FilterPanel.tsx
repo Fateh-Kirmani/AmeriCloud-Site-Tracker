@@ -2,10 +2,9 @@
 import { useState, useRef, MutableRefObject } from 'react'
 import { useRouter } from 'next/navigation'
 import { STATUS_VALUES } from '@/types/project'
+import { CLIENTS } from '@/lib/clients'
 
-const CLIENTS = ['AT&T', 'Verizon', 'T-Mobile', 'Crown Castle', 'SBA Communications']
 const AMERICLOUD_PMS = ['John Smith', 'Sarah Johnson', 'Mike Davis']
-const PROJECT_TEMPLATES = ['Standard Cell Tower', 'Small Cell', 'DAS', 'Rooftop']
 
 const SELECT_CLASS = 'bg-[#0B1929] border border-[#1E3A5F] rounded-md px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#C8102E] focus:border-transparent w-full'
 const INPUT_CLASS = 'bg-[#0B1929] border border-[#1E3A5F] rounded-md px-3 py-2 text-white text-sm placeholder-[#8899AA] focus:outline-none focus:ring-2 focus:ring-[#C8102E] focus:border-transparent w-full'
@@ -18,6 +17,7 @@ type Props = {
   initialPm: string
   initialStatus: string
   initialDate: string
+  templates?: { id: string; name: string }[]
 }
 
 export default function FilterPanel({
@@ -28,6 +28,7 @@ export default function FilterPanel({
   initialPm,
   initialStatus,
   initialDate,
+  templates = [],
 }: Props) {
   const router = useRouter()
   const [search, setSearch] = useState(initialSearch)
@@ -159,7 +160,7 @@ export default function FilterPanel({
             className={SELECT_CLASS}
           >
             <option value="">All Templates</option>
-            {PROJECT_TEMPLATES.map((t) => <option key={t} value={t}>{t}</option>)}
+            {templates.map((t) => <option key={t.id} value={t.name}>{t.name}</option>)}
           </select>
         </div>
 

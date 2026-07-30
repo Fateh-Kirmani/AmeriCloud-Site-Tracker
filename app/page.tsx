@@ -39,11 +39,16 @@ export default async function HomePage({
 
   const hasActiveFilters = !!(search || projectCode || client || template || pm || status || date)
 
+  let filterTemplates: { id: string; name: string }[] = []
   let projects: Project[] = []
   let fetchError = false
 
   try {
     const supabase = createSupabaseClient()
+    try {
+      const { data: tmplData } = await supabase.from('milestone_templates').select('id, name').order('name')
+      filterTemplates = tmplData ?? []
+    } catch {}
     let query = supabase.from('projects').select('*')
 
     if (search) {
@@ -96,6 +101,7 @@ export default async function HomePage({
         initialPm={pm}
         initialStatus={status}
         initialDate={date}
+        templates={filterTemplates}
       />
 
       {fetchError ? (

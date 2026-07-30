@@ -24,6 +24,7 @@ const validBody = {
   address: '200 Oak Ave',
   americloud_site_id: 'AC-002',
   client: 'Verizon',
+  status: 'Active',
 }
 
 function makeRequest(method: string, body?: object) {

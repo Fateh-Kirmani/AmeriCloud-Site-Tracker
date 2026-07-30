@@ -1,7 +1,7 @@
 // components/forms/EditProjectForm.tsx
 'use client'
 import { useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useRouter } from 'next/navigation'
 import { projectSchema, ProjectFormData, Project, STATUS_VALUES } from '@/types/project'
@@ -10,14 +10,13 @@ import Toast from '@/components/Toast'
 import MilestonesTab from '@/components/project-tabs/MilestonesTab'
 import FilesTab from '@/components/project-tabs/FilesTab'
 import TeamTab from '@/components/project-tabs/TeamTab'
+import ClientSelect from '@/components/forms/ClientSelect'
 
 const TABS = ['General Information', 'Milestones', 'Files', 'Team'] as const
 type Tab = (typeof TABS)[number]
 
-const CLIENTS = ['AT&T', 'Verizon', 'T-Mobile', 'Crown Castle', 'SBA Communications']
 const AMERICLOUD_PMS = ['John Smith', 'Sarah Johnson', 'Mike Davis']
 const AMERICLOUD_RFS = ['Robert Chen', 'Lisa Park', 'David Wilson']
-const PROJECT_TEMPLATES = ['Standard Cell Tower', 'Small Cell', 'DAS', 'Rooftop']
 
 function inputClass(hasError: boolean) {
   return `w-full bg-[#0B1929] border ${
@@ -50,7 +49,15 @@ function Field({
   )
 }
 
-export default function EditProjectForm({ project }: { project: Project }) {
+export default function EditProjectForm({
+  project,
+  templates = [],
+  fullTemplates = [],
+}: {
+  project: Project
+  templates?: { id: string; name: string }[]
+  fullTemplates?: { name: string; items: { details: string | null; notes: string | null; sort_order: number }[] }[]
+}) {
   const router = useRouter()
   const [activeTab, setActiveTab] = useState<Tab>('General Information')
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
@@ -59,6 +66,7 @@ export default function EditProjectForm({ project }: { project: Project }) {
   const {
     register,
     handleSubmit,
+    control,
     formState: { errors },
   } = useForm<ProjectFormData>({
     resolver: zodResolver(projectSchema),
@@ -147,17 +155,29 @@ export default function EditProjectForm({ project }: { project: Project }) {
                     <input {...register('address')} className={inputClass(!!errors.address)} placeholder="Enter address" />
                   </Field>
                   <Field label="Project Code">
-                    <input {...register('americloud_site_id')} className={inputClass(false)} placeholder="e.g. AC-2024-001" />
+                    <input
+                      {...register('americloud_site_id')}
+                      readOnly
+                      className={inputClass(false) + ' cursor-not-allowed opacity-80'}
+                      placeholder="Auto-generated on client selection"
+                    />
                   </Field>
                 </div>
               </FormCard>
               <FormCard title="Client & IDs">
                 <div className="space-y-4">
                   <Field label="Client" required error={errors.client?.message}>
-                    <select {...register('client')} aria-label="Client" className={inputClass(!!errors.client)}>
-                      <option value="">Select client...</option>
-                      {CLIENTS.map((c) => <option key={c} value={c}>{c}</option>)}
-                    </select>
+                    <Controller
+                      name="client"
+                      control={control}
+                      render={({ field }) => (
+                        <ClientSelect
+                          value={field.value ?? ''}
+                          onChange={field.onChange}
+                          error={errors.client?.message}
+                        />
+                      )}
+                    />
                   </Field>
                   <Field label="Client Site ID" error={errors.client_site_id?.message}>
                     <input {...register('client_site_id')} className={inputClass(!!errors.client_site_id)} placeholder="Enter client site ID" />
@@ -215,8 +235,8 @@ export default function EditProjectForm({ project }: { project: Project }) {
                   </Field>
                   <Field label="Project Template">
                     <select {...register('project_template')} className={inputClass(false)}>
-                      <option value="">Select template...</option>
-                      {PROJECT_TEMPLATES.map((t) => <option key={t} value={t}>{t}</option>)}
+                      <option value="">No Template</option>
+                      {templates.map((t) => <option key={t.id} value={t.name}>{t.name}</option>)}
                     </select>
                   </Field>
                   <Field label="Project Scope">
@@ -242,7 +262,11 @@ export default function EditProjectForm({ project }: { project: Project }) {
       {/* Milestones tab */}
       {activeTab === 'Milestones' && (
         <div role="tabpanel" id="tabpanel-milestones" aria-labelledby="tab-milestones">
-          <MilestonesTab projectId={project.id} />
+          <MilestonesTab
+            projectId={project.id}
+            projectTemplate={project.project_template}
+            templates={fullTemplates}
+          />
         </div>
       )}
 
