@@ -18,7 +18,8 @@ const mockSupabase = { from: mockFrom }
 
 const validBody = {
   site_name: 'Test Site',
-  address: '123 Main St',
+  street: '123 Main St',
+  city: 'New York',
   americloud_site_id: 'AC-001',
   client: 'AT&T',
   status: 'Active',

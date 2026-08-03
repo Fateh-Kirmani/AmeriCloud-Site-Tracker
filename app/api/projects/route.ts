@@ -21,10 +21,15 @@ export async function POST(request: NextRequest) {
       Object.entries(parsed.data).filter(([, v]) => v !== '')
     ) as typeof parsed.data
 
+    const insertData = {
+      ...cleanedData,
+      address: parsed.data.address || null,
+    }
+
     const supabase = createSupabaseClient()
     const { data, error } = await supabase
       .from('projects')
-      .insert(cleanedData)
+      .insert(insertData)
       .select()
       .single()
 

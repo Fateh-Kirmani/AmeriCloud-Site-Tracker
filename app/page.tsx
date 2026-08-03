@@ -16,6 +16,8 @@ type SearchParams = {
   date?: string
   sort?: string
   dir?: string
+  city?: string
+  zip?: string
 }
 
 export default async function HomePage({
@@ -31,13 +33,15 @@ export default async function HomePage({
   const pm = sp.pm ?? ''
   const status = sp.status ?? ''
   const date = sp.date ?? ''
+  const city = sp.city ?? ''
+  const zip = sp.zip ?? ''
   const sortParam = sp.sort ?? 'created_at'
   const dir = sp.dir === 'asc' ? 'asc' : 'desc'
   const sort = VALID_SORT_COLUMNS.includes(sortParam as typeof VALID_SORT_COLUMNS[number])
     ? sortParam
     : 'created_at'
 
-  const hasActiveFilters = !!(search || projectCode || client || template || pm || status || date)
+  const hasActiveFilters = !!(search || projectCode || client || template || pm || status || date || city || zip)
 
   let filterTemplates: { id: string; name: string }[] = []
   let projects: Project[] = []
@@ -53,7 +57,7 @@ export default async function HomePage({
 
     if (search) {
       query = query.or(
-        `site_name.ilike.%${search}%,client.ilike.%${search}%,americloud_site_id.ilike.%${search}%,americloud_pm.ilike.%${search}%`
+        `site_name.ilike.%${search}%,client.ilike.%${search}%,americloud_site_id.ilike.%${search}%,americloud_pm.ilike.%${search}%,city.ilike.%${search}%`
       )
     }
     if (projectCode) query = query.ilike('americloud_site_id', `%${projectCode}%`)
@@ -62,6 +66,8 @@ export default async function HomePage({
     if (pm) query = query.eq('americloud_pm', pm)
     if (status) query = query.eq('status', status)
     if (date) query = query.gte('created_at', date)
+    if (city) query = query.ilike('city', `%${city}%`)
+    if (zip) query = query.ilike('zip_code', `%${zip}%`)
 
     const { data, error } = await query.order(sort, { ascending: dir === 'asc' })
 
@@ -101,6 +107,8 @@ export default async function HomePage({
         initialPm={pm}
         initialStatus={status}
         initialDate={date}
+        initialCity={city}
+        initialZip={zip}
         templates={filterTemplates}
       />
 

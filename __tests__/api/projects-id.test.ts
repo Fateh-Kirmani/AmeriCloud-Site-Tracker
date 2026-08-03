@@ -21,7 +21,8 @@ jest.mock('@/lib/supabase', () => ({
 
 const validBody = {
   site_name: 'Tower Beta',
-  address: '200 Oak Ave',
+  street: '200 Oak Ave',
+  city: 'Springfield',
   americloud_site_id: 'AC-002',
   client: 'Verizon',
   status: 'Active',

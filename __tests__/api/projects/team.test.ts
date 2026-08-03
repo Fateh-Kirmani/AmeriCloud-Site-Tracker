@@ -36,39 +36,31 @@ describe('GET /api/projects/[id]/team', () => {
     expect(res.status).toBe(404)
   })
 
-  it('returns team_members and milestones when project exists', async () => {
-    const teamMembers = [{ id: 'tm-1', project_id: PROJECT_ID, name: 'Bob', task_milestone_id: 'ms-1', date_from: null, date_to: null, created_at: '2026-07-24T00:00:00Z' }]
-    const milestones = [{ id: 'ms-1', details: 'Phase 1' }]
+  it('returns team_members when project exists', async () => {
+    const teamMembers = [{ id: 'tm-1', project_id: PROJECT_ID, name: 'Bob', email: null, created_at: '2026-07-24T00:00:00Z' }]
     ;(createSupabaseClient as jest.Mock).mockReturnValue({
       from: jest.fn().mockImplementation((table: string) => {
         if (table === 'projects') {
           return { select: () => ({ eq: () => ({ maybeSingle: () => Promise.resolve({ data: { id: PROJECT_ID }, error: null }) }) }) }
         }
-        if (table === 'team_members') {
-          return { select: () => ({ eq: () => ({ order: () => Promise.resolve({ data: teamMembers, error: null }) }) }) }
-        }
-        // milestones
-        return { select: () => ({ eq: () => ({ order: () => Promise.resolve({ data: milestones, error: null }) }) }) }
+        // team_members
+        return { select: () => ({ eq: () => ({ order: () => Promise.resolve({ data: teamMembers, error: null }) }) }) }
       }),
     })
     const res = await GET(makeGetRequest(), makeParams())
     expect(res.status).toBe(200)
     const body = await res.json()
     expect(body.team_members).toHaveLength(1)
-    expect(body.milestones).toHaveLength(1)
-    expect(body.milestones[0].details).toBe('Phase 1')
+    expect(body.team_members[0].name).toBe('Bob')
   })
 
-  it('returns 500 when milestones query fails', async () => {
+  it('returns 500 when team_members query fails', async () => {
     ;(createSupabaseClient as jest.Mock).mockReturnValue({
       from: jest.fn().mockImplementation((table: string) => {
         if (table === 'projects') {
           return { select: () => ({ eq: () => ({ maybeSingle: () => Promise.resolve({ data: { id: PROJECT_ID }, error: null }) }) }) }
         }
-        if (table === 'team_members') {
-          return { select: () => ({ eq: () => ({ order: () => Promise.resolve({ data: [], error: null }) }) }) }
-        }
-        // milestones table fails
+        // team_members table fails
         return { select: () => ({ eq: () => ({ order: () => Promise.resolve({ data: null, error: { message: 'DB error' } }) }) }) }
       }),
     })
@@ -99,7 +91,7 @@ describe('PUT /api/projects/[id]/team', () => {
   })
 
   it('deletes and upserts team members, returns updated list', async () => {
-    const saved = [{ id: 'tm-new', project_id: PROJECT_ID, name: 'Alice', task_milestone_id: null, date_from: null, date_to: null, created_at: '2026-07-24T00:00:00Z' }]
+    const saved = [{ id: 'tm-new', project_id: PROJECT_ID, name: 'Alice', email: null, created_at: '2026-07-24T00:00:00Z' }]
     const mockDelete = jest.fn().mockReturnValue({ eq: jest.fn().mockReturnValue({ in: jest.fn().mockResolvedValue({ error: null }) }) })
     const mockUpsert = jest.fn().mockResolvedValue({ error: null })
     ;(createSupabaseClient as jest.Mock).mockReturnValue({
@@ -115,7 +107,7 @@ describe('PUT /api/projects/[id]/team', () => {
       }),
     })
     const res = await PUT(
-      makePutRequest({ team_members: [{ name: 'Alice', task_milestone_id: null, date_from: '', date_to: '' }], deleted_ids: ['old-tm-id'] }),
+      makePutRequest({ team_members: [{ name: 'Alice', email: '' }], deleted_ids: ['old-tm-id'] }),
       makeParams()
     )
     expect(res.status).toBe(200)

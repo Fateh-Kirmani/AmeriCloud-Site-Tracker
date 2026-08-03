@@ -27,22 +27,25 @@ function makePutRequest(body: object) {
   })
 }
 
-function makeMockFrom(projectData: object | null, tableData: object) {
-  const mockFrom = jest.fn().mockImplementation((table: string) => {
-    if (table === 'projects') {
-      return {
-        select: () => ({ eq: () => ({ maybeSingle: () => Promise.resolve({ data: projectData, error: null }) }) }),
-      }
-    }
-    return tableData
-  })
-  return mockFrom
+/** Mock `from('projects')` to support both maybeSingle (project check) and single (project_notes fetch) */
+function makeProjectsMock(projectData: object | null) {
+  return {
+    select: () => ({
+      eq: () => ({
+        maybeSingle: () => Promise.resolve({ data: projectData, error: null }),
+        single: () => Promise.resolve({ data: projectData ? { project_notes: null } : null, error: null }),
+      }),
+    }),
+  }
 }
 
 describe('GET /api/projects/[id]/milestones', () => {
   it('returns 404 when project not found', async () => {
     ;(createSupabaseClient as jest.Mock).mockReturnValue({
-      from: makeMockFrom(null, {}),
+      from: jest.fn().mockImplementation((table: string) => {
+        if (table === 'projects') return makeProjectsMock(null)
+        return {}
+      }),
     })
     const res = await GET(makeGetRequest(), makeParams())
     expect(res.status).toBe(404)
@@ -54,25 +57,21 @@ describe('GET /api/projects/[id]/milestones', () => {
     ]
     ;(createSupabaseClient as jest.Mock).mockReturnValue({
       from: jest.fn().mockImplementation((table: string) => {
-        if (table === 'projects') {
-          return { select: () => ({ eq: () => ({ maybeSingle: () => Promise.resolve({ data: { id: PROJECT_ID }, error: null }) }) }) }
-        }
+        if (table === 'projects') return makeProjectsMock({ id: PROJECT_ID })
         return { select: () => ({ eq: () => ({ order: () => Promise.resolve({ data: milestones, error: null }) }) }) }
       }),
     })
     const res = await GET(makeGetRequest(), makeParams())
     expect(res.status).toBe(200)
     const body = await res.json()
-    expect(body).toHaveLength(1)
-    expect(body[0].details).toBe('Phase 1')
+    expect(body.milestones).toHaveLength(1)
+    expect(body.milestones[0].details).toBe('Phase 1')
   })
 
   it('returns 500 on database error', async () => {
     ;(createSupabaseClient as jest.Mock).mockReturnValue({
       from: jest.fn().mockImplementation((table: string) => {
-        if (table === 'projects') {
-          return { select: () => ({ eq: () => ({ maybeSingle: () => Promise.resolve({ data: { id: PROJECT_ID }, error: null }) }) }) }
-        }
+        if (table === 'projects') return makeProjectsMock({ id: PROJECT_ID })
         return { select: () => ({ eq: () => ({ order: () => Promise.resolve({ data: null, error: { message: 'DB error' } }) }) }) }
       }),
     })
@@ -84,7 +83,10 @@ describe('GET /api/projects/[id]/milestones', () => {
 describe('PUT /api/projects/[id]/milestones', () => {
   it('returns 404 when project not found', async () => {
     ;(createSupabaseClient as jest.Mock).mockReturnValue({
-      from: makeMockFrom(null, {}),
+      from: jest.fn().mockImplementation((table: string) => {
+        if (table === 'projects') return makeProjectsMock(null)
+        return {}
+      }),
     })
     const res = await PUT(makePutRequest({ milestones: [], deleted_ids: [] }), makeParams())
     expect(res.status).toBe(404)
@@ -92,7 +94,10 @@ describe('PUT /api/projects/[id]/milestones', () => {
 
   it('returns 400 for invalid body shape', async () => {
     ;(createSupabaseClient as jest.Mock).mockReturnValue({
-      from: makeMockFrom({ id: PROJECT_ID }, {}),
+      from: jest.fn().mockImplementation((table: string) => {
+        if (table === 'projects') return makeProjectsMock({ id: PROJECT_ID })
+        return {}
+      }),
     })
     const res = await PUT(makePutRequest({ milestones: 'not-array', deleted_ids: [] }), makeParams())
     expect(res.status).toBe(400)
@@ -104,12 +109,11 @@ describe('PUT /api/projects/[id]/milestones', () => {
     const mockUpsert = jest.fn().mockResolvedValue({ error: null })
     ;(createSupabaseClient as jest.Mock).mockReturnValue({
       from: jest.fn().mockImplementation((table: string) => {
-        if (table === 'projects') {
-          return { select: () => ({ eq: () => ({ maybeSingle: () => Promise.resolve({ data: { id: PROJECT_ID }, error: null }) }) }) }
-        }
+        if (table === 'projects') return makeProjectsMock({ id: PROJECT_ID })
         return {
           delete: mockDelete,
           upsert: mockUpsert,
+          update: jest.fn().mockReturnValue({ eq: jest.fn().mockResolvedValue({ error: null }) }),
           select: () => ({ eq: () => ({ order: () => Promise.resolve({ data: savedMilestones, error: null }) }) }),
         }
       }),

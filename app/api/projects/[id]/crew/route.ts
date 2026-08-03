@@ -16,23 +16,17 @@ export async function GET(
     if (!project) return NextResponse.json({ error: 'Project not found' }, { status: 404 })
 
     const { data, error } = await supabase
-      .from('milestones')
+      .from('crew_members')
       .select('*')
       .eq('project_id', id)
       .order('sort_order', { ascending: true })
 
     if (error) {
-      console.error('[GET /api/projects/[id]/milestones]', error.message)
+      console.error('[GET /api/projects/[id]/crew]', error.message)
       return NextResponse.json({ error: 'Database error' }, { status: 500 })
     }
 
-    const { data: projectData } = await supabase
-      .from('projects')
-      .select('project_notes')
-      .eq('id', id)
-      .single()
-
-    return NextResponse.json({ milestones: data, project_notes: projectData?.project_notes ?? '' })
+    return NextResponse.json({ crew_members: data })
   } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
@@ -50,8 +44,8 @@ export async function PUT(
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
   }
 
-  const { milestones, deleted_ids, project_notes } = body as { milestones: unknown; deleted_ids: unknown; project_notes?: string }
-  if (!Array.isArray(milestones) || !Array.isArray(deleted_ids)) {
+  const { crew_members, deleted_ids } = body as { crew_members: unknown; deleted_ids: unknown }
+  if (!Array.isArray(crew_members) || !Array.isArray(deleted_ids)) {
     return NextResponse.json({ error: 'Invalid body shape' }, { status: 400 })
   }
 
@@ -65,50 +59,39 @@ export async function PUT(
     if (!project) return NextResponse.json({ error: 'Project not found' }, { status: 404 })
 
     if (deleted_ids.length > 0) {
-      const { error } = await supabase.from('milestones').delete().eq('project_id', id).in('id', deleted_ids)
+      const { error } = await supabase.from('crew_members').delete().eq('project_id', id).in('id', deleted_ids)
       if (error) {
-        console.error('[PUT /api/projects/[id]/milestones] delete error:', error.message)
+        console.error('[PUT /api/projects/[id]/crew] delete error:', error.message)
         return NextResponse.json({ error: 'Database error' }, { status: 500 })
       }
     }
 
-    if (milestones.length > 0) {
-      const { randomUUID } = await import('crypto')
-      const rows = (milestones as Record<string, unknown>[]).map((m, i) => ({
-        id: (m.id as string) || randomUUID(),
+    if (crew_members.length > 0) {
+      const rows = (crew_members as Record<string, unknown>[]).map((m, i) => ({
+        ...(m.id ? { id: m.id } : {}),
         project_id: id,
-        details: (m.details as string) || null,
-        owner: (m.owner as string) || null,
-        projected_date: (m.projected_date as string) || null,
-        actualized_date: (m.actualized_date as string) || null,
-        notes: (m.notes as string) || null,
+        name: (m.name as string) || null,
+        email: (m.email as string) || null,
+        task: (m.task as string) || null,
+        date_from: (m.date_from as string) || null,
+        date_to: (m.date_to as string) || null,
         sort_order: (m.sort_order as number) ?? i,
       }))
-      const { error } = await supabase.from('milestones').upsert(rows)
+      const { error } = await supabase.from('crew_members').upsert(rows)
       if (error) {
-        console.error('[PUT /api/projects/[id]/milestones] upsert error:', error.message)
+        console.error('[PUT /api/projects/[id]/crew] upsert error:', error.message)
         return NextResponse.json({ error: 'Database error' }, { status: 500 })
-      }
-    }
-
-    if (project_notes !== undefined) {
-      const { error: notesError } = await supabase
-        .from('projects')
-        .update({ project_notes })
-        .eq('id', id)
-      if (notesError) {
-        console.error('[PUT /api/projects/[id]/milestones] project_notes update error:', notesError.message)
       }
     }
 
     const { data, error } = await supabase
-      .from('milestones')
+      .from('crew_members')
       .select('*')
       .eq('project_id', id)
       .order('sort_order', { ascending: true })
 
     if (error) return NextResponse.json({ error: 'Database error' }, { status: 500 })
-    return NextResponse.json({ milestones: data, project_notes: project_notes ?? '' })
+    return NextResponse.json({ crew_members: data })
   } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }

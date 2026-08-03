@@ -24,11 +24,16 @@ export async function PUT(
     Object.entries(parsed.data).map(([k, v]) => [k, v === '' ? null : v])
   ) as typeof parsed.data
 
+  const updateData = {
+    ...cleanedData,
+    address: parsed.data.address || null,
+  }
+
   try {
     const supabase = createSupabaseClient()
     const { data, error } = await supabase
       .from('projects')
-      .update(cleanedData)
+      .update(updateData)
       .eq('id', id)
       .select()
       .maybeSingle()

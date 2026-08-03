@@ -1,10 +1,22 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
+import { CSSProperties } from 'react'
 import { MilestoneRow } from '@/types/milestone'
 import TrashIcon from '@/components/icons/TrashIcon'
 
 const inputClass =
   'w-full bg-[#0B1929] border border-[#1E3A5F] rounded-md px-3 py-2 text-white text-sm placeholder-[#8899AA] focus:outline-none focus:ring-2 focus:ring-[#C8102E] focus:border-transparent transition-colors'
+
+function getProjectedDateStyle(projectedDate: string, actualizedDate: string): CSSProperties {
+  if (!projectedDate) return {}
+  const today = new Date().toISOString().split('T')[0]
+  if (actualizedDate) {
+    if (actualizedDate <= projectedDate) return { color: '#4ade80' }
+    return {}
+  }
+  if (projectedDate < today) return { color: '#f87171' }
+  return {}
+}
 
 type Props = {
   projectId: string
@@ -24,6 +36,9 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
   const [templateName, setTemplateName] = useState('')
   const [savingTemplate, setSavingTemplate] = useState(false)
   const [templateSaveError, setTemplateSaveError] = useState('')
+  const [projectNotes, setProjectNotes] = useState('')
+  const [teamMembers, setTeamMembers] = useState<string[]>([])
+  const [dragIndex, setDragIndex] = useState<number | null>(null)
   const pendingDeleteRef = useRef<{ row: MilestoneRow; index: number } | null>(null)
   const pendingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -32,54 +47,69 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
   }, [])
 
   useEffect(() => {
+    async function fetchMilestones() {
+      const r = await fetch(`/api/projects/${projectId}/milestones`)
+      const { milestones: data, project_notes: pNotes }: {
+        milestones: Array<{ id: string; details: string | null; owner: string | null; projected_date: string | null; actualized_date: string | null; notes: string | null }>
+        project_notes: string
+      } = await r.json()
+
+      setProjectNotes(pNotes ?? '')
+
+      if (data.length === 0 && projectTemplate) {
+        const tmpl = (templates ?? []).find(t => t.name === projectTemplate)
+        if (tmpl && tmpl.items.length > 0) {
+          const preFilled = tmpl.items
+            .sort((a, b) => a.sort_order - b.sort_order)
+            .map(item => ({
+              details: item.details ?? '',
+              owner: '',
+              projected_date: '',
+              actualized_date: '',
+              notes: item.notes ?? '',
+            }))
+          setRows(preFilled)
+          try {
+            const res = await fetch(`/api/projects/${projectId}/milestones`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ milestones: preFilled, deleted_ids: [] }),
+            })
+            if (res.ok) {
+              const { milestones } = await res.json()
+              setRows(milestones.map((m: { id: string; details: string | null; owner: string | null; projected_date: string | null; actualized_date: string | null; notes: string | null }) => ({
+                id: m.id,
+                details: m.details ?? '',
+                owner: m.owner ?? '',
+                projected_date: m.projected_date ?? '',
+                actualized_date: m.actualized_date ?? '',
+                notes: m.notes ?? '',
+              })))
+            }
+          } catch {}
+          return
+        }
+      }
+
+      setRows(data.map((m) => ({
+        id: m.id,
+        details: m.details ?? '',
+        owner: m.owner ?? '',
+        projected_date: m.projected_date ?? '',
+        actualized_date: m.actualized_date ?? '',
+        notes: m.notes ?? '',
+      })))
+    }
+
+    async function fetchTeam() {
+      const r = await fetch(`/api/projects/${projectId}/team`)
+      const { team_members } = await r.json()
+      setTeamMembers((team_members as Array<{ name: string | null }>).map((m) => m.name ?? '').filter(Boolean))
+    }
+
     async function load() {
       try {
-        const r = await fetch(`/api/projects/${projectId}/milestones`)
-        const data: Array<{ id: string; details: string | null; owner: string | null; projected_date: string | null; actualized_date: string | null; notes: string | null }> = await r.json()
-
-        if (data.length === 0 && projectTemplate) {
-          const tmpl = (templates ?? []).find(t => t.name === projectTemplate)
-          if (tmpl && tmpl.items.length > 0) {
-            const preFilled = tmpl.items
-              .sort((a, b) => a.sort_order - b.sort_order)
-              .map(item => ({
-                details: item.details ?? '',
-                owner: '',
-                projected_date: '',
-                actualized_date: '',
-                notes: item.notes ?? '',
-              }))
-            setRows(preFilled)
-            try {
-              const res = await fetch(`/api/projects/${projectId}/milestones`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ milestones: preFilled, deleted_ids: [] }),
-              })
-              if (res.ok) {
-                const { milestones } = await res.json()
-                setRows(milestones.map((m: { id: string; details: string | null; owner: string | null; projected_date: string | null; actualized_date: string | null; notes: string | null }) => ({
-                  id: m.id,
-                  details: m.details ?? '',
-                  owner: m.owner ?? '',
-                  projected_date: m.projected_date ?? '',
-                  actualized_date: m.actualized_date ?? '',
-                  notes: m.notes ?? '',
-                })))
-              }
-            } catch {}
-            return
-          }
-        }
-
-        setRows(data.map((m) => ({
-          id: m.id,
-          details: m.details ?? '',
-          owner: m.owner ?? '',
-          projected_date: m.projected_date ?? '',
-          actualized_date: m.actualized_date ?? '',
-          notes: m.notes ?? '',
-        })))
+        await Promise.all([fetchMilestones(), fetchTeam()])
       } catch {
         setFetchError(true)
       } finally {
@@ -88,7 +118,7 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
     }
 
     load()
-  }, [projectId])
+  }, [projectId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function addRow() {
     setRows((r) => [...r, { details: '', owner: '', projected_date: '', actualized_date: '', notes: '' }])
@@ -140,10 +170,14 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
       const res = await fetch(`/api/projects/${projectId}/milestones`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ milestones: rows, deleted_ids: [...deletedIds, ...extraIds] }),
+        body: JSON.stringify({
+          milestones: rows.map((r, i) => ({ ...r, sort_order: i })),
+          deleted_ids: [...deletedIds, ...extraIds],
+          project_notes: projectNotes,
+        }),
       })
       if (!res.ok) throw new Error()
-      const { milestones } = await res.json()
+      const { milestones, project_notes: pNotes } = await res.json()
       setRows(
         milestones.map((m: { id: string; details: string | null; owner: string | null; projected_date: string | null; actualized_date: string | null; notes: string | null }) => ({
           id: m.id,
@@ -154,6 +188,7 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
           notes: m.notes ?? '',
         }))
       )
+      setProjectNotes(pNotes ?? '')
       setDeletedIds([])
     } catch {
       setSaveError(true)
@@ -196,57 +231,119 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
   if (fetchError) return <p className="text-[#F87171] text-sm">Failed to load. Please refresh.</p>
 
   return (
-    <div className="space-y-3">
-      {rows.length === 0 && <p className="text-[#94A3B8] text-sm">No milestones added yet.</p>}
-      {rows.length > 0 && (
-        <div className="flex gap-2 items-center px-1">
-          <span className="flex-[2] text-[#94A3B8] text-xs uppercase tracking-wider font-medium">Milestone Details</span>
-          <span className="flex-1 text-[#94A3B8] text-xs uppercase tracking-wider font-medium">Owner</span>
-          <span className="flex-1 text-[#94A3B8] text-xs uppercase tracking-wider font-medium">Projected Date</span>
-          <span className="flex-1 text-[#94A3B8] text-xs uppercase tracking-wider font-medium">Actual Date</span>
-          <span className="flex-1 text-[#94A3B8] text-xs uppercase tracking-wider font-medium">Notes</span>
-          <span className="w-4 shrink-0" />
+    <>
+      <div className="flex gap-6 items-start">
+        {/* Left: milestone table */}
+        <div className="flex-1 min-w-0 space-y-3">
+          {rows.length === 0 && <p className="text-[#94A3B8] text-sm">No milestones added yet.</p>}
+          {rows.length > 0 && (
+            <div className="flex gap-2 items-center px-1">
+              <span className="w-5 shrink-0" />
+              <span className="flex-[2] text-[#94A3B8] text-xs uppercase tracking-wider font-medium">Milestone Details</span>
+              <span className="flex-1 text-[#94A3B8] text-xs uppercase tracking-wider font-medium">Owner</span>
+              <span className="flex-1 text-[#94A3B8] text-xs uppercase tracking-wider font-medium">Projected Date</span>
+              <span className="flex-1 text-[#94A3B8] text-xs uppercase tracking-wider font-medium">Actual Date</span>
+              <span className="flex-1 text-[#94A3B8] text-xs uppercase tracking-wider font-medium">Notes</span>
+              <span className="w-4 shrink-0" />
+            </div>
+          )}
+          {rows.map((row, i) => (
+            <div
+              key={i}
+              className="flex gap-2 items-center"
+              draggable={true}
+              onDragStart={() => setDragIndex(i)}
+              onDragOver={(e) => {
+                e.preventDefault()
+                if (dragIndex !== null && dragIndex !== i) {
+                  const newRows = [...rows]
+                  const [dragged] = newRows.splice(dragIndex, 1)
+                  newRows.splice(i, 0, dragged)
+                  setRows(newRows)
+                  setDragIndex(i)
+                }
+              }}
+              onDragEnd={() => setDragIndex(null)}
+            >
+              <button
+                type="button"
+                className="cursor-grab text-[#94A3B8] hover:text-white shrink-0"
+                draggable={false}
+              >
+                <svg width="12" height="16" viewBox="0 0 12 16" fill="currentColor">
+                  <circle cx="3" cy="3" r="1.5"/><circle cx="9" cy="3" r="1.5"/>
+                  <circle cx="3" cy="8" r="1.5"/><circle cx="9" cy="8" r="1.5"/>
+                  <circle cx="3" cy="13" r="1.5"/><circle cx="9" cy="13" r="1.5"/>
+                </svg>
+              </button>
+              <input value={row.details} onChange={(e) => updateRow(i, 'details', e.target.value)} className={`${inputClass} flex-[2]`} placeholder="Milestone details" />
+              <select value={row.owner} onChange={(e) => updateRow(i, 'owner', e.target.value)} className={`${inputClass} flex-1`}>
+                <option value="">— Select —</option>
+                {row.owner && !teamMembers.includes(row.owner) && <option value={row.owner}>{row.owner}</option>}
+                {teamMembers.map((name) => <option key={name} value={name}>{name}</option>)}
+              </select>
+              <input
+                type="date"
+                value={row.projected_date}
+                onChange={(e) => updateRow(i, 'projected_date', e.target.value)}
+                className={`${inputClass} flex-1`}
+                style={getProjectedDateStyle(row.projected_date, row.actualized_date)}
+              />
+              <input type="date" value={row.actualized_date} onChange={(e) => updateRow(i, 'actualized_date', e.target.value)} className={`${inputClass} flex-1`} />
+              <input value={row.notes} onChange={(e) => updateRow(i, 'notes', e.target.value)} className={`${inputClass} flex-1`} placeholder="Notes" />
+              <button type="button" onClick={() => deleteRow(i)} aria-label="Delete milestone" className="text-[#94A3B8] hover:text-[#C8102E] transition-colors shrink-0">
+                <TrashIcon />
+              </button>
+            </div>
+          ))}
+          {showUndo && (
+            <div className="flex items-center justify-between bg-[#1E3A5F] rounded-lg px-4 py-2 text-sm">
+              <span className="text-[#94A3B8]">Milestone deleted.</span>
+              <button type="button" onClick={undoDelete} className="text-[#C8102E] hover:text-white font-medium ml-4 transition-colors">
+                Undo
+              </button>
+            </div>
+          )}
+          <div className="flex items-center justify-between pt-2">
+            <div className="flex items-center gap-3">
+              <button type="button" onClick={addRow} className="text-[#94A3B8] hover:text-white text-sm font-medium transition-colors">
+                + Add Milestone
+              </button>
+            </div>
+            <div className="flex items-center gap-3">
+              {saveError && <p className="text-[#F87171] text-xs">Failed to save. Please try again.</p>}
+              <button
+                type="button"
+                onClick={() => setShowTemplateModal(true)}
+                disabled={rows.length === 0}
+                className="bg-[#F5C518] hover:bg-[#D4A800] disabled:opacity-40 disabled:cursor-not-allowed text-[#0B1929] font-semibold px-6 py-2.5 rounded-lg transition-colors text-sm uppercase tracking-widest"
+              >
+                Save As Template
+              </button>
+              <button type="button" onClick={save} disabled={saving} className="bg-[#C8102E] hover:bg-[#A50E25] disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold px-6 py-2.5 rounded-lg transition-colors text-sm uppercase tracking-widest">
+                {saving ? 'Saving...' : 'Save Changes'}
+              </button>
+            </div>
+          </div>
         </div>
-      )}
-      {rows.map((row, i) => (
-        <div key={i} className="flex gap-2 items-center">
-          <input value={row.details} onChange={(e) => updateRow(i, 'details', e.target.value)} className={`${inputClass} flex-[2]`} placeholder="Milestone details" />
-          <input value={row.owner} onChange={(e) => updateRow(i, 'owner', e.target.value)} className={`${inputClass} flex-1`} placeholder="Owner" />
-          <input type="date" value={row.projected_date} onChange={(e) => updateRow(i, 'projected_date', e.target.value)} className={`${inputClass} flex-1`} />
-          <input type="date" value={row.actualized_date} onChange={(e) => updateRow(i, 'actualized_date', e.target.value)} className={`${inputClass} flex-1`} />
-          <input value={row.notes} onChange={(e) => updateRow(i, 'notes', e.target.value)} className={`${inputClass} flex-1`} placeholder="Notes" />
-          <button type="button" onClick={() => deleteRow(i)} aria-label="Delete milestone" className="text-[#94A3B8] hover:text-[#C8102E] transition-colors shrink-0">
-            <TrashIcon />
-          </button>
-        </div>
-      ))}
-      {showUndo && (
-        <div className="flex items-center justify-between bg-[#1E3A5F] rounded-lg px-4 py-2 text-sm">
-          <span className="text-[#94A3B8]">Milestone deleted.</span>
-          <button type="button" onClick={undoDelete} className="text-[#C8102E] hover:text-white font-medium ml-4 transition-colors">
-            Undo
-          </button>
-        </div>
-      )}
-      <div className="flex items-center justify-between pt-2">
-        <div className="flex items-center gap-3">
-          <button type="button" onClick={addRow} className="text-[#94A3B8] hover:text-white text-sm font-medium transition-colors">
-            + Add Milestone
-          </button>
-          <button
-            type="button"
-            onClick={() => setShowTemplateModal(true)}
-            disabled={rows.length === 0}
-            className="text-[#94A3B8] hover:text-white text-sm font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            Save As Template
-          </button>
-        </div>
-        <div className="flex flex-col items-end gap-1">
-          {saveError && <p className="text-[#F87171] text-xs">Failed to save. Please try again.</p>}
-          <button type="button" onClick={save} disabled={saving} className="bg-[#C8102E] hover:bg-[#A50E25] disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold px-6 py-2.5 rounded-lg transition-colors text-sm uppercase tracking-widest">
-            {saving ? 'Saving...' : 'Save Changes'}
-          </button>
+
+        {/* Right: Project Notes */}
+        <div className="w-64 shrink-0 flex flex-col gap-1.5">
+          <span className="text-[#94A3B8] text-xs uppercase tracking-wider font-medium">Project Notes</span>
+          <textarea
+            value={projectNotes}
+            onChange={(e) => {
+              setProjectNotes(e.target.value)
+              const el = e.target
+              el.style.height = 'auto'
+              el.style.height = el.scrollHeight + 'px'
+            }}
+            ref={(el) => { if (el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px' } }}
+            placeholder="Add project notes..."
+            className={`${inputClass} resize-none overflow-hidden`}
+            style={{ minHeight: '120px' }}
+            rows={4}
+          />
         </div>
       </div>
 
@@ -283,6 +380,6 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
           </div>
         </div>
       )}
-    </div>
+    </>
   )
 }

@@ -41,7 +41,14 @@ export type TeamMember = {
 export type TeamMemberRow = {
   id?: string
   name: string
-  task_milestone_id: string | null
+  email: string
+}
+
+export type CrewMemberRow = {
+  id?: string
+  name: string
+  email: string
+  task: string
   date_from: string
   date_to: string
 }

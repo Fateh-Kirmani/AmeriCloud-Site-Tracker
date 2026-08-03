@@ -17,6 +17,8 @@ type Props = {
   initialPm: string
   initialStatus: string
   initialDate: string
+  initialCity?: string
+  initialZip?: string
   templates?: { id: string; name: string }[]
 }
 
@@ -28,6 +30,8 @@ export default function FilterPanel({
   initialPm,
   initialStatus,
   initialDate,
+  initialCity = '',
+  initialZip = '',
   templates = [],
 }: Props) {
   const router = useRouter()
@@ -35,6 +39,10 @@ export default function FilterPanel({
   const searchRef = useRef(initialSearch)
   const [projectCode, setProjectCode] = useState(initialProjectCode)
   const projectCodeRef = useRef(initialProjectCode)
+  const [city, setCity] = useState(initialCity)
+  const cityRef = useRef(initialCity)
+  const [zip, setZip] = useState(initialZip)
+  const zipRef = useRef(initialZip)
   const [client, setClient] = useState(initialClient)
   const clientRef = useRef(initialClient)
   const [template, setTemplate] = useState(initialTemplate)
@@ -52,6 +60,8 @@ export default function FilterPanel({
     const values: Record<string, string> = {
       search: searchRef.current,
       project_code: projectCodeRef.current,
+      city: cityRef.current,
+      zip: zipRef.current,
       client: clientRef.current,
       template: templateRef.current,
       pm: pmRef.current,
@@ -66,21 +76,12 @@ export default function FilterPanel({
     return qs ? `/?${qs}` : '/'
   }
 
-  function handleSearch(value: string) {
-    searchRef.current = value
-    setSearch(value)
+  function handleDebounced(key: string, value: string, setter: (v: string) => void, ref: MutableRefObject<string>) {
+    ref.current = value
+    setter(value)
     if (debounceRef.current) clearTimeout(debounceRef.current)
     debounceRef.current = setTimeout(() => {
-      router.push(buildUrl({ search: value }))
-    }, 300)
-  }
-
-  function handleProjectCode(value: string) {
-    projectCodeRef.current = value
-    setProjectCode(value)
-    if (debounceRef.current) clearTimeout(debounceRef.current)
-    debounceRef.current = setTimeout(() => {
-      router.push(buildUrl({ project_code: value }))
+      router.push(buildUrl({ [key]: value }))
     }, 300)
   }
 
@@ -98,6 +99,8 @@ export default function FilterPanel({
   function clearFilters() {
     searchRef.current = ''
     projectCodeRef.current = ''
+    cityRef.current = ''
+    zipRef.current = ''
     clientRef.current = ''
     templateRef.current = ''
     pmRef.current = ''
@@ -105,6 +108,8 @@ export default function FilterPanel({
     dateRef.current = ''
     setSearch('')
     setProjectCode('')
+    setCity('')
+    setZip('')
     setClient('')
     setTemplate('')
     setPm('')
@@ -113,7 +118,7 @@ export default function FilterPanel({
     router.push('/')
   }
 
-  const hasFilters = search || projectCode || client || template || pm || status || date
+  const hasFilters = search || projectCode || city || zip || client || template || pm || status || date
 
   return (
     <div className="bg-[#112240] border border-[#1E3A5F] rounded-xl p-4 mb-6">
@@ -124,7 +129,7 @@ export default function FilterPanel({
             aria-label="Search projects"
             placeholder="Search projects..."
             value={search}
-            onChange={(e) => handleSearch(e.target.value)}
+            onChange={(e) => handleDebounced('search', e.target.value, setSearch, searchRef)}
             className={INPUT_CLASS}
           />
         </div>
@@ -135,7 +140,29 @@ export default function FilterPanel({
             aria-label="Project code"
             placeholder="Project code..."
             value={projectCode}
-            onChange={(e) => handleProjectCode(e.target.value)}
+            onChange={(e) => handleDebounced('project_code', e.target.value, setProjectCode, projectCodeRef)}
+            className={INPUT_CLASS}
+          />
+        </div>
+
+        <div>
+          <input
+            type="text"
+            aria-label="City"
+            placeholder="City..."
+            value={city}
+            onChange={(e) => handleDebounced('city', e.target.value, setCity, cityRef)}
+            className={INPUT_CLASS}
+          />
+        </div>
+
+        <div>
+          <input
+            type="text"
+            aria-label="ZIP Code"
+            placeholder="ZIP code..."
+            value={zip}
+            onChange={(e) => handleDebounced('zip', e.target.value, setZip, zipRef)}
             className={INPUT_CLASS}
           />
         </div>

@@ -1,5 +1,5 @@
 // __tests__/components/forms/EditProjectForm.test.tsx
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
 import EditProjectForm from '@/components/forms/EditProjectForm'
 import { Project } from '@/types/project'
 
@@ -12,15 +12,24 @@ jest.mock('@/components/project-tabs/FilesTab', () => ({
   __esModule: true,
   default: () => <div data-testid="files-tab">FilesTab</div>,
 }))
-jest.mock('@/components/project-tabs/TeamTab', () => ({
+jest.mock('@/components/project-tabs/ManagerialTeamTab', () => ({
   __esModule: true,
-  default: () => <div data-testid="team-tab">TeamTab</div>,
+  default: () => <div data-testid="managerial-team-tab">ManagerialTeamTab</div>,
+}))
+jest.mock('@/components/project-tabs/CrewTab', () => ({
+  __esModule: true,
+  default: () => <div data-testid="crew-tab">CrewTab</div>,
 }))
 
 const mockProject: Project = {
   id: 'proj-123',
   site_name: 'Test Site',
   address: '123 Main St',
+  street: '123 Main St',
+  city: 'New York',
+  state: 'NY',
+  zip_code: '10001',
+  project_notes: null,
   americloud_site_id: 'AC-001',
   client: 'AT&T',
   client_site_id: null,
@@ -60,11 +69,18 @@ it('switches to Files tab when clicked', () => {
   expect(screen.getByRole('tab', { name: 'Files' })).toHaveAttribute('aria-selected', 'true')
 })
 
-it('switches to Team tab when clicked', () => {
+it('switches to Managerial Team tab when clicked', () => {
   render(<EditProjectForm project={mockProject} />)
-  fireEvent.click(screen.getByRole('tab', { name: 'Team' }))
-  expect(screen.getByTestId('team-tab')).toBeInTheDocument()
-  expect(screen.getByRole('tab', { name: 'Team' })).toHaveAttribute('aria-selected', 'true')
+  fireEvent.click(screen.getByRole('tab', { name: 'Managerial Team' }))
+  expect(screen.getByTestId('managerial-team-tab')).toBeInTheDocument()
+  expect(screen.getByRole('tab', { name: 'Managerial Team' })).toHaveAttribute('aria-selected', 'true')
+})
+
+it('switches to Crew tab when clicked', () => {
+  render(<EditProjectForm project={mockProject} />)
+  fireEvent.click(screen.getByRole('tab', { name: 'Crew' }))
+  expect(screen.getByTestId('crew-tab')).toBeInTheDocument()
+  expect(screen.getByRole('tab', { name: 'Crew' })).toHaveAttribute('aria-selected', 'true')
 })
 
 it('passes projectId to tab components', () => {

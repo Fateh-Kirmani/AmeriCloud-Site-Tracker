@@ -15,21 +15,18 @@ export async function GET(
       .maybeSingle()
     if (!project) return NextResponse.json({ error: 'Project not found' }, { status: 404 })
 
-    const [teamResult, milestonesResult] = await Promise.all([
-      supabase.from('team_members').select('*').eq('project_id', id).order('created_at', { ascending: true }),
-      supabase.from('milestones').select('id, details').eq('project_id', id).order('created_at', { ascending: true }),
-    ])
+    const teamResult = await supabase
+      .from('team_members')
+      .select('*')
+      .eq('project_id', id)
+      .order('created_at', { ascending: true })
 
-    if (teamResult.error || milestonesResult.error) {
-      const msg = teamResult.error?.message ?? milestonesResult.error?.message
-      console.error('[GET /api/projects/[id]/team]', msg)
+    if (teamResult.error) {
+      console.error('[GET /api/projects/[id]/team]', teamResult.error.message)
       return NextResponse.json({ error: 'Database error' }, { status: 500 })
     }
 
-    return NextResponse.json({
-      team_members: teamResult.data,
-      milestones: milestonesResult.data ?? [],
-    })
+    return NextResponse.json({ team_members: teamResult.data })
   } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
@@ -74,9 +71,7 @@ export async function PUT(
         ...(m.id ? { id: m.id } : {}),
         project_id: id,
         name: (m.name as string) || null,
-        task_milestone_id: (m.task_milestone_id as string) || null,
-        date_from: (m.date_from as string) || null,
-        date_to: (m.date_to as string) || null,
+        email: (m.email as string) || null,
       }))
       const { error } = await supabase.from('team_members').upsert(rows)
       if (error) {

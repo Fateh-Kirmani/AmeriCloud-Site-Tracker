@@ -41,7 +41,8 @@ describe('NewProjectForm', () => {
     render(<NewProjectForm />)
 
     await userEvent.type(screen.getByPlaceholderText('Enter site name'), 'Test Site')
-    await userEvent.type(screen.getByPlaceholderText('Enter address'), '123 Main St')
+    await userEvent.type(screen.getByPlaceholderText('123 Main St'), '123 Main St')
+    await userEvent.type(screen.getByPlaceholderText('New York'), 'New York')
     await userEvent.click(screen.getByRole('combobox', { name: /client/i }))
     await userEvent.click(await screen.findByRole('option', { name: 'AT&T' }))
     await userEvent.click(screen.getByRole('button', { name: /create project/i }))
@@ -63,7 +64,8 @@ describe('NewProjectForm', () => {
     render(<NewProjectForm />)
 
     await userEvent.type(screen.getByPlaceholderText('Enter site name'), 'Test Site')
-    await userEvent.type(screen.getByPlaceholderText('Enter address'), '123 Main St')
+    await userEvent.type(screen.getByPlaceholderText('123 Main St'), '123 Main St')
+    await userEvent.type(screen.getByPlaceholderText('New York'), 'New York')
     await userEvent.click(screen.getByRole('combobox', { name: /client/i }))
     await userEvent.click(await screen.findByRole('option', { name: 'AT&T' }))
     await userEvent.click(screen.getByRole('button', { name: /create project/i }))
@@ -79,7 +81,8 @@ describe('NewProjectForm', () => {
     render(<NewProjectForm />)
 
     await userEvent.type(screen.getByPlaceholderText('Enter site name'), 'Test Site')
-    await userEvent.type(screen.getByPlaceholderText('Enter address'), '123 Main St')
+    await userEvent.type(screen.getByPlaceholderText('123 Main St'), '123 Main St')
+    await userEvent.type(screen.getByPlaceholderText('New York'), 'New York')
     await userEvent.click(screen.getByRole('combobox', { name: /client/i }))
     await userEvent.click(await screen.findByRole('option', { name: 'AT&T' }))
     await userEvent.click(screen.getByRole('button', { name: /create project/i }))

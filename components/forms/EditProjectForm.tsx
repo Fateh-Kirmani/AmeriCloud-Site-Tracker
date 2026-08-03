@@ -9,10 +9,11 @@ import FormCard from '@/components/FormCard'
 import Toast from '@/components/Toast'
 import MilestonesTab from '@/components/project-tabs/MilestonesTab'
 import FilesTab from '@/components/project-tabs/FilesTab'
-import TeamTab from '@/components/project-tabs/TeamTab'
+import ManagerialTeamTab from '@/components/project-tabs/ManagerialTeamTab'
+import CrewTab from '@/components/project-tabs/CrewTab'
 import ClientSelect from '@/components/forms/ClientSelect'
 
-const TABS = ['General Information', 'Milestones', 'Files', 'Team'] as const
+const TABS = ['General Information', 'Managerial Team', 'Crew', 'Milestones', 'Files'] as const
 type Tab = (typeof TABS)[number]
 
 const AMERICLOUD_PMS = ['John Smith', 'Sarah Johnson', 'Mike Davis']
@@ -72,7 +73,10 @@ export default function EditProjectForm({
     resolver: zodResolver(projectSchema),
     defaultValues: {
       site_name: project.site_name,
-      address: project.address,
+      street: project.street ?? project.address ?? '',
+      city: project.city ?? '',
+      state: project.state ?? '',
+      zip_code: project.zip_code ?? '',
       americloud_site_id: project.americloud_site_id ?? '',
       client: project.client,
       client_site_id: project.client_site_id ?? '',
@@ -151,9 +155,20 @@ export default function EditProjectForm({
                   <Field label="Project Name" required error={errors.site_name?.message}>
                     <input {...register('site_name')} className={inputClass(!!errors.site_name)} placeholder="Enter site name" />
                   </Field>
-                  <Field label="Address" required error={errors.address?.message}>
-                    <input {...register('address')} className={inputClass(!!errors.address)} placeholder="Enter address" />
+                  <Field label="Street" required error={errors.street?.message}>
+                    <input {...register('street')} className={inputClass(!!errors.street)} placeholder="123 Main St" />
                   </Field>
+                  <Field label="City" required error={errors.city?.message}>
+                    <input {...register('city')} className={inputClass(!!errors.city)} placeholder="New York" />
+                  </Field>
+                  <div className="grid grid-cols-2 gap-4">
+                    <Field label="State" error={errors.state?.message}>
+                      <input {...register('state')} className={inputClass(!!errors.state)} placeholder="NY" />
+                    </Field>
+                    <Field label="ZIP Code" error={errors.zip_code?.message}>
+                      <input {...register('zip_code')} className={inputClass(!!errors.zip_code)} placeholder="10001" />
+                    </Field>
+                  </div>
                   <Field label="Project Code">
                     <input
                       {...register('americloud_site_id')}
@@ -259,6 +274,20 @@ export default function EditProjectForm({
         </div>
       )}
 
+      {/* Managerial Team tab */}
+      {activeTab === 'Managerial Team' && (
+        <div role="tabpanel" id="tabpanel-managerial-team" aria-labelledby="tab-managerial-team">
+          <ManagerialTeamTab projectId={project.id} />
+        </div>
+      )}
+
+      {/* Crew tab */}
+      {activeTab === 'Crew' && (
+        <div role="tabpanel" id="tabpanel-crew" aria-labelledby="tab-crew">
+          <CrewTab projectId={project.id} />
+        </div>
+      )}
+
       {/* Milestones tab */}
       {activeTab === 'Milestones' && (
         <div role="tabpanel" id="tabpanel-milestones" aria-labelledby="tab-milestones">
@@ -274,13 +303,6 @@ export default function EditProjectForm({
       {activeTab === 'Files' && (
         <div role="tabpanel" id="tabpanel-files" aria-labelledby="tab-files">
           <FilesTab projectId={project.id} />
-        </div>
-      )}
-
-      {/* Team tab */}
-      {activeTab === 'Team' && (
-        <div role="tabpanel" id="tabpanel-team" aria-labelledby="tab-team">
-          <TeamTab projectId={project.id} />
         </div>
       )}
     </>

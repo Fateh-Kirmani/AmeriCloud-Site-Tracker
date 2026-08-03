@@ -2,7 +2,8 @@ import { projectSchema } from '@/types/project'
 
 const validBase = {
   site_name: 'Test Site',
-  address: '123 Main St',
+  street: '123 Main St',
+  city: 'New York',
   americloud_site_id: 'AC-001',
   client: 'AT&T',
   status: 'Active' as const,
@@ -17,8 +18,8 @@ describe('projectSchema', () => {
     expect(projectSchema.safeParse({ ...validBase, site_name: '' }).success).toBe(false)
   })
 
-  it('rejects empty address', () => {
-    expect(projectSchema.safeParse({ ...validBase, address: '' }).success).toBe(false)
+  it('rejects empty street', () => {
+    expect(projectSchema.safeParse({ ...validBase, street: '' }).success).toBe(false)
   })
 
   it('accepts empty americloud_site_id (field is optional)', () => {
@@ -44,6 +45,9 @@ describe('projectSchema', () => {
   it('accepts a fully populated payload', () => {
     const result = projectSchema.safeParse({
       ...validBase,
+      address: '123 Main St, New York, NY 10001',
+      state: 'NY',
+      zip_code: '10001',
       client_site_id: 'CLI-001',
       pm_name: 'Jane Doe',
       pm_email: 'jane@example.com',

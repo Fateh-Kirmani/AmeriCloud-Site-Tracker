@@ -100,13 +100,20 @@ export default function NewProjectForm({ templates = [] }: { templates?: { id: s
                   placeholder="Enter site name"
                 />
               </Field>
-              <Field label="Address" required error={errors.address?.message}>
-                <input
-                  {...register('address')}
-                  className={inputClass(!!errors.address)}
-                  placeholder="Enter address"
-                />
+              <Field label="Street" required error={errors.street?.message}>
+                <input {...register('street')} className={inputClass(!!errors.street)} placeholder="123 Main St" />
               </Field>
+              <Field label="City" required error={errors.city?.message}>
+                <input {...register('city')} className={inputClass(!!errors.city)} placeholder="New York" />
+              </Field>
+              <div className="grid grid-cols-2 gap-4">
+                <Field label="State" error={errors.state?.message}>
+                  <input {...register('state')} className={inputClass(!!errors.state)} placeholder="NY" />
+                </Field>
+                <Field label="ZIP Code" error={errors.zip_code?.message}>
+                  <input {...register('zip_code')} className={inputClass(!!errors.zip_code)} placeholder="10001" />
+                </Field>
+              </div>
               <Field label="Project Code">
                 <input
                   {...register('americloud_site_id')}
