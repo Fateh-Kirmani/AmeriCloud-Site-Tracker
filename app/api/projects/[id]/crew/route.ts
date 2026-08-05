@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseClient } from '@/lib/supabase'
+import { sendEmail } from '@/lib/email'
 
 export async function GET(
   _request: NextRequest,
@@ -53,10 +54,16 @@ export async function PUT(
     const supabase = createSupabaseClient()
     const { data: project } = await supabase
       .from('projects')
-      .select('id')
+      .select('id, site_name')
       .eq('id', id)
       .maybeSingle()
     if (!project) return NextResponse.json({ error: 'Project not found' }, { status: 404 })
+
+    const { data: currentCrew } = await supabase
+      .from('crew_members')
+      .select('id, name, email, task, date_from, date_to')
+      .eq('project_id', id)
+    const currentCrewMap = new Map((currentCrew ?? []).map(m => [m.id, m]))
 
     if (deleted_ids.length > 0) {
       const { error } = await supabase.from('crew_members').delete().eq('project_id', id).in('id', deleted_ids)
@@ -82,6 +89,51 @@ export async function PUT(
         console.error('[PUT /api/projects/[id]/crew] upsert error:', error.message)
         return NextResponse.json({ error: 'Database error' }, { status: 500 })
       }
+    }
+
+    try {
+      const projectName = project.site_name
+      const emailPromises: Promise<void>[] = []
+      const incomingCrew = crew_members as Record<string, unknown>[]
+
+      for (const row of incomingCrew) {
+        const newTask = (row.task as string) || ''
+        const newEmail = (row.email as string) || ''
+        const newDateFrom = (row.date_from as string) || ''
+        const newDateTo = (row.date_to as string) || ''
+        const rowId = row.id as string | undefined
+
+        if (!newTask || !newEmail) continue
+
+        if (!rowId) {
+          // New crew member with task — Task Assigned
+          emailPromises.push(sendEmail({
+            to: newEmail,
+            subject: `AmeriCloud Site Tracker - ${projectName} - Task Assigned`,
+            text: `You have been assigned a task on project "${projectName}".\n\nTask: ${newTask}\nDate From: ${newDateFrom || '—'}\nDate To: ${newDateTo || '—'}`,
+          }))
+        } else {
+          const current = currentCrewMap.get(rowId)
+          if (!current) {
+            emailPromises.push(sendEmail({
+              to: newEmail,
+              subject: `AmeriCloud Site Tracker - ${projectName} - Task Assigned`,
+              text: `You have been assigned a task on project "${projectName}".\n\nTask: ${newTask}\nDate From: ${newDateFrom || '—'}\nDate To: ${newDateTo || '—'}`,
+            }))
+          } else if (newTask !== (current.task ?? '')) {
+            // Task changed — Task Assigned
+            emailPromises.push(sendEmail({
+              to: newEmail,
+              subject: `AmeriCloud Site Tracker - ${projectName} - Task Assigned`,
+              text: `You have been assigned a task on project "${projectName}".\n\nTask: ${newTask}\nDate From: ${newDateFrom || '—'}\nDate To: ${newDateTo || '—'}`,
+            }))
+          }
+        }
+      }
+
+      await Promise.all(emailPromises)
+    } catch (emailErr) {
+      console.error('[PUT /api/projects/[id]/crew] email error:', emailErr)
     }
 
     const { data, error } = await supabase
