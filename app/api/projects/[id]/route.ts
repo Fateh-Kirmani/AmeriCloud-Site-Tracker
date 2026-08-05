@@ -26,7 +26,8 @@ export async function PUT(
 
   const updateData = {
     ...cleanedData,
-    address: parsed.data.address || null,
+    // address column has a NOT NULL constraint; fall back to street for existing rows
+    address: parsed.data.address || parsed.data.street || '',
   }
 
   try {

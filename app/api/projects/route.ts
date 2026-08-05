@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
 
     const insertData = {
       ...cleanedData,
-      address: parsed.data.address || null,
+      address: parsed.data.address || parsed.data.street || '',
     }
 
     const supabase = createSupabaseClient()
