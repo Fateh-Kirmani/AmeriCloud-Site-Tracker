@@ -1,6 +1,6 @@
 // components/forms/EditProjectForm.tsx
 'use client'
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useRouter } from 'next/navigation'
@@ -12,6 +12,7 @@ import FilesTab from '@/components/project-tabs/FilesTab'
 import ManagerialTeamTab from '@/components/project-tabs/ManagerialTeamTab'
 import CrewTab from '@/components/project-tabs/CrewTab'
 import ClientSelect from '@/components/forms/ClientSelect'
+import { generateProjectCode } from '@/lib/clients'
 
 const TABS = ['General Information', 'Managerial Team', 'Crew', 'Milestones', 'Files'] as const
 type Tab = (typeof TABS)[number]
@@ -68,6 +69,8 @@ export default function EditProjectForm({
     register,
     handleSubmit,
     control,
+    watch,
+    setValue,
     formState: { errors },
   } = useForm<ProjectFormData>({
     resolver: zodResolver(projectSchema),
@@ -93,6 +96,13 @@ export default function EditProjectForm({
       status: (project.status as (typeof STATUS_VALUES)[number]) ?? 'Active',
     },
   })
+
+  const isFirstRender = useRef(true)
+  const clientValue = watch('client')
+  useEffect(() => {
+    if (isFirstRender.current) { isFirstRender.current = false; return }
+    setValue('americloud_site_id', clientValue ? generateProjectCode(clientValue) : '')
+  }, [clientValue]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const onSubmit = async (data: ProjectFormData) => {
     setIsSubmitting(true)
