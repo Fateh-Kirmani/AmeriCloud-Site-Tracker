@@ -37,6 +37,14 @@ yarn-error.log*
 # vercel
 .vercel
 
+# claude code (may contain local secrets)
+.claude/settings.local.json
+.superpowers/
+.impeccable/
+.playwright-mcp/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+.vercel
