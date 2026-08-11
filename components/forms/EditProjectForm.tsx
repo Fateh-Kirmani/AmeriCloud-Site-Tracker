@@ -9,12 +9,11 @@ import FormCard from '@/components/FormCard'
 import Toast from '@/components/Toast'
 import MilestonesTab from '@/components/project-tabs/MilestonesTab'
 import FilesTab from '@/components/project-tabs/FilesTab'
-import ManagerialTeamTab from '@/components/project-tabs/ManagerialTeamTab'
-import CrewTab from '@/components/project-tabs/CrewTab'
+import TaskSchedulerTab from '@/components/project-tabs/TaskSchedulerTab'
 import ClientSelect from '@/components/forms/ClientSelect'
 import { generateProjectCode } from '@/lib/clients'
 
-const TABS = ['General Information', 'Managerial Team', 'Crew', 'Milestones', 'Files'] as const
+const TABS = ['General Information', 'Milestones', 'Task Scheduler', 'Files'] as const
 type Tab = (typeof TABS)[number]
 
 const AMERICLOUD_PMS = ['John Smith', 'Sarah Johnson', 'Mike Davis']
@@ -58,7 +57,7 @@ export default function EditProjectForm({
 }: {
   project: Project
   templates?: { id: string; name: string }[]
-  fullTemplates?: { name: string; items: { details: string | null; notes: string | null; sort_order: number }[] }[]
+  fullTemplates?: { name: string; items: { details: string | null; notes: string | null; sort_order: number; tasks?: { task: string }[] }[] }[]
 }) {
   const router = useRouter()
   const [activeTab, setActiveTab] = useState<Tab>('General Information')
@@ -284,20 +283,6 @@ export default function EditProjectForm({
         </div>
       )}
 
-      {/* Managerial Team tab */}
-      {activeTab === 'Managerial Team' && (
-        <div role="tabpanel" id="tabpanel-managerial-team" aria-labelledby="tab-managerial-team">
-          <ManagerialTeamTab projectId={project.id} />
-        </div>
-      )}
-
-      {/* Crew tab */}
-      {activeTab === 'Crew' && (
-        <div role="tabpanel" id="tabpanel-crew" aria-labelledby="tab-crew">
-          <CrewTab projectId={project.id} />
-        </div>
-      )}
-
       {/* Milestones tab */}
       {activeTab === 'Milestones' && (
         <div role="tabpanel" id="tabpanel-milestones" aria-labelledby="tab-milestones">
@@ -306,6 +291,13 @@ export default function EditProjectForm({
             projectTemplate={project.project_template}
             templates={fullTemplates}
           />
+        </div>
+      )}
+
+      {/* Task Scheduler tab */}
+      {activeTab === 'Task Scheduler' && (
+        <div role="tabpanel" id="tabpanel-task-scheduler" aria-labelledby="tab-task-scheduler">
+          <TaskSchedulerTab projectId={project.id} />
         </div>
       )}
 

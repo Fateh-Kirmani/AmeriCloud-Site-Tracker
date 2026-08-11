@@ -27,13 +27,21 @@ export async function GET(
       return NextResponse.json({ error: 'Database error' }, { status: 500 })
     }
 
-    const { data: projectData } = await supabase
-      .from('projects')
-      .select('project_notes')
-      .eq('id', id)
-      .single()
-
-    return NextResponse.json({ milestones: data, project_notes: projectData?.project_notes ?? '' })
+    const milestoneIds = (data ?? []).map(m => m.id)
+    let tasksMap: Record<string, { id: string; task: string; sort_order: number }[]> = {}
+    if (milestoneIds.length > 0) {
+      const { data: tasks } = await supabase
+        .from('milestone_tasks')
+        .select('*')
+        .in('milestone_id', milestoneIds)
+        .order('sort_order')
+      for (const t of tasks ?? []) {
+        if (!tasksMap[t.milestone_id]) tasksMap[t.milestone_id] = []
+        tasksMap[t.milestone_id].push({ id: t.id, task: t.task, sort_order: t.sort_order })
+      }
+    }
+    const enriched = (data ?? []).map(m => ({ ...m, tasks: tasksMap[m.id] ?? [] }))
+    return NextResponse.json({ milestones: enriched, project_notes: '' })
   } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
@@ -51,7 +59,7 @@ export async function PUT(
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
   }
 
-  const { milestones, deleted_ids, project_notes } = body as { milestones: unknown; deleted_ids: unknown; project_notes?: string }
+  const { milestones, deleted_ids } = body as { milestones: unknown; deleted_ids: unknown; project_notes?: string }
   if (!Array.isArray(milestones) || !Array.isArray(deleted_ids)) {
     return NextResponse.json({ error: 'Invalid body shape' }, { status: 400 })
   }
@@ -100,22 +108,13 @@ export async function PUT(
         projected_date: (m.projected_date as string) || null,
         actualized_date: (m.actualized_date as string) || null,
         notes: (m.notes as string) || null,
+        status: (m.status as string) || 'Active',
         sort_order: (m.sort_order as number) ?? i,
       }))
       const { error } = await supabase.from('milestones').upsert(rows)
       if (error) {
         console.error('[PUT /api/projects/[id]/milestones] upsert error:', error.message)
         return NextResponse.json({ error: 'Database error' }, { status: 500 })
-      }
-    }
-
-    if (project_notes !== undefined) {
-      const { error: notesError } = await supabase
-        .from('projects')
-        .update({ project_notes })
-        .eq('id', id)
-      if (notesError) {
-        console.error('[PUT /api/projects/[id]/milestones] project_notes update error:', notesError.message)
       }
     }
 
@@ -153,7 +152,6 @@ export async function PUT(
         if (!email) continue
 
         if (!rowId) {
-          // New milestone — Assigned
           emailPromises.push(sendEmail({
             to: email,
             subject: `AmeriCloud Site Tracker - ${projectName} - Milestone Assigned`,
@@ -162,7 +160,6 @@ export async function PUT(
         } else {
           const current = currentMap.get(rowId)
           if (!current) {
-            // No current record found — treat as assigned
             emailPromises.push(sendEmail({
               to: email,
               subject: `AmeriCloud Site Tracker - ${projectName} - Milestone Assigned`,
@@ -171,7 +168,6 @@ export async function PUT(
           } else {
             const oldOwner = current.owner ?? ''
             if (newOwner !== oldOwner) {
-              // Owner changed — Assigned
               emailPromises.push(sendEmail({
                 to: email,
                 subject: `AmeriCloud Site Tracker - ${projectName} - Milestone Assigned`,
@@ -183,7 +179,6 @@ export async function PUT(
               newActualizedDate !== (current.actualized_date ?? '') ||
               newNotes !== (current.notes ?? '')
             ) {
-              // Same owner, fields changed — Changed
               emailPromises.push(sendEmail({
                 to: email,
                 subject: `AmeriCloud Site Tracker - ${projectName} - Milestone Changed`,
@@ -199,14 +194,35 @@ export async function PUT(
       console.error('[PUT /api/projects/[id]/milestones] email error:', emailErr)
     }
 
-    const { data, error } = await supabase
+    const { data: allMilestones, error: fetchError } = await supabase
       .from('milestones')
       .select('*')
       .eq('project_id', id)
       .order('sort_order', { ascending: true })
 
-    if (error) return NextResponse.json({ error: 'Database error' }, { status: 500 })
-    return NextResponse.json({ milestones: data, project_notes: project_notes ?? '' })
+    if (fetchError) return NextResponse.json({ error: 'Database error' }, { status: 500 })
+
+    if ((allMilestones ?? []).length > 0 && (allMilestones ?? []).every(m => m.status === 'Completed')) {
+      await supabase.from('projects').update({ status: 'Completed' }).eq('id', id)
+    }
+
+    // Enrich with tasks
+    const milestoneIds = (allMilestones ?? []).map(m => m.id)
+    let tasksMap: Record<string, { id: string; task: string; sort_order: number }[]> = {}
+    if (milestoneIds.length > 0) {
+      const { data: tasks } = await supabase
+        .from('milestone_tasks')
+        .select('*')
+        .in('milestone_id', milestoneIds)
+        .order('sort_order')
+      for (const t of tasks ?? []) {
+        if (!tasksMap[t.milestone_id]) tasksMap[t.milestone_id] = []
+        tasksMap[t.milestone_id].push({ id: t.id, task: t.task, sort_order: t.sort_order })
+      }
+    }
+    const enriched = (allMilestones ?? []).map(m => ({ ...m, tasks: tasksMap[m.id] ?? [] }))
+
+    return NextResponse.json({ milestones: enriched, project_notes: '' })
   } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }

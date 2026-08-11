@@ -38,7 +38,7 @@ export default function Header() {
         />
         <div className="w-px h-8 bg-[#1E3A5F]" />
         <span className="text-white font-semibold text-lg tracking-wide">
-          AmeriCloud Site Tracker
+          AmeriCloud Project Tracker
         </span>
       </div>
     </header>

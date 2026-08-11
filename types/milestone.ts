@@ -6,6 +6,19 @@ export type Milestone = {
   projected_date: string | null
   actualized_date: string | null
   notes: string | null
+  status: string
+  created_at: string
+}
+
+export type MilestoneTask = {
+  id?: string
+  task: string
+  sort_order?: number
+}
+
+export type ProjectNote = {
+  id: string
+  text: string
   created_at: string
 }
 
@@ -13,9 +26,12 @@ export type MilestoneRow = {
   id?: string
   details: string
   owner: string
+  owner_email: string
   projected_date: string
   actualized_date: string
   notes: string
+  status: string
+  tasks: MilestoneTask[]
 }
 
 export type MilestonesSavePayload = {
@@ -74,6 +90,7 @@ export type MilestoneTemplateItem = {
   details: string | null
   notes: string | null
   sort_order: number
+  tasks: MilestoneTask[]
 }
 
 export type MilestoneTemplate = {

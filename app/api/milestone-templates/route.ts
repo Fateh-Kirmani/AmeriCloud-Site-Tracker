@@ -6,7 +6,7 @@ export async function GET() {
     const supabase = createSupabaseClient()
     const { data, error } = await supabase
       .from('milestone_templates')
-      .select('id, name, milestone_template_items(id, details, notes, sort_order)')
+      .select('id, name, milestone_template_items(id, details, notes, sort_order, tasks)')
       .order('name')
 
     if (error) {
@@ -17,11 +17,19 @@ export async function GET() {
     const templates = (data ?? []).map((t: {
       id: string
       name: string
-      milestone_template_items: { id: string; details: string | null; notes: string | null; sort_order: number }[] | null
+      milestone_template_items: { id: string; details: string | null; notes: string | null; sort_order: number; tasks: { task: string }[] | null }[] | null
     }) => ({
       id: t.id,
       name: t.name,
-      items: (t.milestone_template_items ?? []).sort((a, b) => a.sort_order - b.sort_order),
+      items: (t.milestone_template_items ?? [])
+        .sort((a, b) => a.sort_order - b.sort_order)
+        .map(item => ({
+          id: item.id,
+          details: item.details,
+          notes: item.notes,
+          sort_order: item.sort_order,
+          tasks: (item.tasks as { task: string }[] | null) ?? [],
+        })),
     }))
 
     return NextResponse.json(templates)
@@ -61,10 +69,11 @@ export async function POST(request: NextRequest) {
     }
 
     if (items.length > 0) {
-      const rows = (items as { details?: string; notes?: string }[]).map((item, i) => ({
+      const rows = (items as { details?: string; notes?: string; tasks?: { task: string }[] }[]).map((item, i) => ({
         template_id: template.id,
         details: item.details || null,
         notes: item.notes || null,
+        tasks: item.tasks ?? [],
         sort_order: i,
       }))
       const { error: itemsError } = await supabase.from('milestone_template_items').insert(rows)
