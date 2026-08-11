@@ -6,6 +6,8 @@ import { MANAGERS } from '@/lib/managers'
 
 const inputClass = 'w-full bg-[#0B1929] border border-[#1E3A5F] rounded-md px-3 py-2 text-white text-sm placeholder-[#8899AA] focus:outline-none focus:ring-2 focus:ring-[#C8102E] focus:border-transparent transition-colors'
 const readonlyClass = 'w-full bg-[#0D1F35] border border-[#1E3A5F] rounded-md px-3 py-2 text-[#94A3B8] text-sm cursor-not-allowed'
+const cellInput = 'w-full bg-[#0B1929] border border-[#1E3A5F] rounded-md px-2 py-2 text-white text-sm placeholder-[#8899AA] focus:outline-none focus:ring-2 focus:ring-[#C8102E] focus:border-transparent transition-colors'
+const cellReadonly = 'w-full bg-[#0D1F35] border border-[#1E3A5F] rounded-md px-2 py-2 text-[#94A3B8] text-sm cursor-not-allowed'
 
 type Props = {
   projectId: string
@@ -320,74 +322,106 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
 
         {rows.length > 0 && (
           <div className="overflow-x-auto">
-            <div className="min-w-max space-y-2">
-              {/* Header */}
-              <div className="flex gap-2 items-center px-1">
-                <span className="w-5 shrink-0" />
-                <span className="w-56 shrink-0 text-[#94A3B8] text-xs uppercase tracking-wider font-medium">Milestone Details</span>
-                <span className="w-40 shrink-0 text-[#94A3B8] text-xs uppercase tracking-wider font-medium">Owner</span>
-                <span className="w-44 shrink-0 text-[#94A3B8] text-xs uppercase tracking-wider font-medium">Owner Email</span>
-                <span className="w-32 shrink-0 text-[#94A3B8] text-xs uppercase tracking-wider font-medium">Projected</span>
-                <span className="w-32 shrink-0 text-[#94A3B8] text-xs uppercase tracking-wider font-medium">Actual</span>
-                <span className="w-28 shrink-0 text-[#94A3B8] text-xs uppercase tracking-wider font-medium">Status</span>
-                <span className="w-48 shrink-0 text-[#94A3B8] text-xs uppercase tracking-wider font-medium">Notes</span>
-                <span className="w-36 shrink-0 text-[#94A3B8] text-xs uppercase tracking-wider font-medium">Tasks</span>
-                <span className="w-4 shrink-0" />
-              </div>
-
-              {/* Rows */}
-              {rows.map((row, i) => (
-                <div
-                  key={i}
-                  className="flex gap-2 items-center"
-                  draggable
-                  onDragStart={() => setDragIndex(i)}
-                  onDragOver={e => {
-                    e.preventDefault()
-                    if (dragIndex !== null && dragIndex !== i) {
-                      const next = [...rows]
-                      const [dragged] = next.splice(dragIndex, 1)
-                      next.splice(i, 0, dragged)
-                      setRows(next)
-                      setDragIndex(i)
-                    }
-                  }}
-                  onDragEnd={() => setDragIndex(null)}
-                >
-                  <button type="button" className="cursor-grab text-[#94A3B8] hover:text-white shrink-0 w-5" draggable={false}>
-                    <svg width="12" height="16" viewBox="0 0 12 16" fill="currentColor">
-                      <circle cx="3" cy="3" r="1.5"/><circle cx="9" cy="3" r="1.5"/>
-                      <circle cx="3" cy="8" r="1.5"/><circle cx="9" cy="8" r="1.5"/>
-                      <circle cx="3" cy="13" r="1.5"/><circle cx="9" cy="13" r="1.5"/>
-                    </svg>
-                  </button>
-                  <input value={row.details} onChange={e => updateRow(i, 'details', e.target.value)} className={`${inputClass} w-56 shrink-0`} placeholder="Milestone details" />
-                  <select value={row.owner} onChange={e => updateRow(i, 'owner', e.target.value)} className={`${inputClass} w-40 shrink-0`}>
-                    <option value="">— Select —</option>
-                    {MANAGERS.map(m => <option key={m.name} value={m.name}>{m.name}</option>)}
-                  </select>
-                  <input value={row.owner_email} readOnly className={`${readonlyClass} w-44 shrink-0`} placeholder="Auto-filled" />
-                  <input type="date" value={row.projected_date} onChange={e => updateRow(i, 'projected_date', e.target.value)} className={`${inputClass} w-32 shrink-0`} style={getProjectedDateStyle(row.projected_date, row.actualized_date)} />
-                  <input type="date" value={row.actualized_date} onChange={e => updateRow(i, 'actualized_date', e.target.value)} className={`${inputClass} w-32 shrink-0`} />
-                  <select value={row.status} onChange={e => updateRow(i, 'status', e.target.value)} className={`${inputClass} w-28 shrink-0`}>
-                    <option value="Active">Active</option>
-                    <option value="Completed">Completed</option>
-                  </select>
-                  <input value={row.notes} onChange={e => updateRow(i, 'notes', e.target.value)} className={`${inputClass} w-48 shrink-0`} placeholder="Notes" />
-                  <div className="w-36 shrink-0 flex gap-1">
-                    <button type="button" onClick={() => openAddTasks(i)} className="flex-1 bg-[#F5C518] hover:bg-[#D4A800] text-[#0B1929] text-xs font-semibold py-1.5 px-2 rounded transition-colors">
-                      Add Tasks
-                    </button>
-                    <button type="button" onClick={() => openViewTasks(i)} className="flex-1 bg-green-600 hover:bg-green-700 text-white text-xs font-semibold py-1.5 px-2 rounded transition-colors">
-                      View Tasks
-                    </button>
-                  </div>
-                  <button type="button" onClick={() => deleteRow(i)} aria-label="Delete milestone" className="text-[#94A3B8] hover:text-[#C8102E] transition-colors shrink-0">
-                    <TrashIcon />
-                  </button>
-                </div>
-              ))}
-            </div>
+            <table className="border-separate border-spacing-0" style={{ minWidth: 1080 }}>
+              <colgroup>
+                <col style={{ width: 28 }} />
+                <col style={{ width: 220 }} />
+                <col style={{ width: 156 }} />
+                <col style={{ width: 196 }} />
+                <col style={{ width: 132 }} />
+                <col style={{ width: 132 }} />
+                <col style={{ width: 110 }} />
+                <col style={{ width: 180 }} />
+                <col style={{ width: 148 }} />
+                <col style={{ width: 28 }} />
+              </colgroup>
+              <thead>
+                <tr>
+                  <th />
+                  <th className="text-left pb-2 pr-2 text-[#94A3B8] text-xs uppercase tracking-wider font-medium">Milestone Details</th>
+                  <th className="text-left pb-2 pr-2 text-[#94A3B8] text-xs uppercase tracking-wider font-medium">Owner</th>
+                  <th className="text-left pb-2 pr-2 text-[#94A3B8] text-xs uppercase tracking-wider font-medium">Owner Email</th>
+                  <th className="text-left pb-2 pr-2 text-[#94A3B8] text-xs uppercase tracking-wider font-medium">Projected</th>
+                  <th className="text-left pb-2 pr-2 text-[#94A3B8] text-xs uppercase tracking-wider font-medium">Actual</th>
+                  <th className="text-left pb-2 pr-2 text-[#94A3B8] text-xs uppercase tracking-wider font-medium">Status</th>
+                  <th className="text-left pb-2 pr-2 text-[#94A3B8] text-xs uppercase tracking-wider font-medium">Notes</th>
+                  <th className="text-left pb-2 pr-2 text-[#94A3B8] text-xs uppercase tracking-wider font-medium">Tasks</th>
+                  <th />
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((row, i) => (
+                  <tr
+                    key={i}
+                    draggable
+                    onDragStart={() => setDragIndex(i)}
+                    onDragOver={e => {
+                      e.preventDefault()
+                      if (dragIndex !== null && dragIndex !== i) {
+                        const next = [...rows]
+                        const [dragged] = next.splice(dragIndex, 1)
+                        next.splice(i, 0, dragged)
+                        setRows(next)
+                        setDragIndex(i)
+                      }
+                    }}
+                    onDragEnd={() => setDragIndex(null)}
+                  >
+                    <td className="py-1 pr-2 align-middle">
+                      <button type="button" className="cursor-grab text-[#94A3B8] hover:text-white" draggable={false}>
+                        <svg width="12" height="16" viewBox="0 0 12 16" fill="currentColor">
+                          <circle cx="3" cy="3" r="1.5"/><circle cx="9" cy="3" r="1.5"/>
+                          <circle cx="3" cy="8" r="1.5"/><circle cx="9" cy="8" r="1.5"/>
+                          <circle cx="3" cy="13" r="1.5"/><circle cx="9" cy="13" r="1.5"/>
+                        </svg>
+                      </button>
+                    </td>
+                    <td className="py-1 pr-2">
+                      <input value={row.details} onChange={e => updateRow(i, 'details', e.target.value)} className={cellInput} placeholder="Milestone details" />
+                    </td>
+                    <td className="py-1 pr-2">
+                      <select value={row.owner} onChange={e => updateRow(i, 'owner', e.target.value)} className={cellInput}>
+                        <option value="">— Select —</option>
+                        {MANAGERS.map(m => <option key={m.name} value={m.name}>{m.name}</option>)}
+                      </select>
+                    </td>
+                    <td className="py-1 pr-2">
+                      <input value={row.owner_email} readOnly className={cellReadonly} placeholder="Auto-filled" />
+                    </td>
+                    <td className="py-1 pr-2">
+                      <input type="date" value={row.projected_date} onChange={e => updateRow(i, 'projected_date', e.target.value)} className={cellInput} style={getProjectedDateStyle(row.projected_date, row.actualized_date)} />
+                    </td>
+                    <td className="py-1 pr-2">
+                      <input type="date" value={row.actualized_date} onChange={e => updateRow(i, 'actualized_date', e.target.value)} className={cellInput} />
+                    </td>
+                    <td className="py-1 pr-2">
+                      <select value={row.status} onChange={e => updateRow(i, 'status', e.target.value)} className={cellInput}>
+                        <option value="Active">Active</option>
+                        <option value="Completed">Completed</option>
+                      </select>
+                    </td>
+                    <td className="py-1 pr-2">
+                      <input value={row.notes} onChange={e => updateRow(i, 'notes', e.target.value)} className={cellInput} placeholder="Notes" />
+                    </td>
+                    <td className="py-1 pr-2">
+                      <div className="flex gap-1">
+                        <button type="button" onClick={() => openAddTasks(i)} className="flex-1 bg-[#F5C518] hover:bg-[#D4A800] text-[#0B1929] text-xs font-semibold py-1.5 px-1 rounded transition-colors whitespace-nowrap">
+                          Add Tasks
+                        </button>
+                        <button type="button" onClick={() => openViewTasks(i)} className="flex-1 bg-green-600 hover:bg-green-700 text-white text-xs font-semibold py-1.5 px-1 rounded transition-colors whitespace-nowrap">
+                          View Tasks
+                        </button>
+                      </div>
+                    </td>
+                    <td className="py-1 align-middle">
+                      <button type="button" onClick={() => deleteRow(i)} aria-label="Delete milestone" className="text-[#94A3B8] hover:text-[#C8102E] transition-colors">
+                        <TrashIcon />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
 
