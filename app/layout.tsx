@@ -8,7 +8,7 @@ import SidebarProvider from '@/components/SidebarProvider'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'AmeriCloud Site Tracker',
+  title: 'AmeriCloud Project Tracker',
   description: 'Internal project tracking tool for AmeriCloud Telecom Solutions',
 }
 
