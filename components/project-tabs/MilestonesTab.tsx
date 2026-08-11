@@ -313,75 +313,84 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
   const currentTasks = taskPopup !== null ? rows[taskPopup.index]?.tasks ?? [] : []
 
   return (
-    <div className="flex gap-6 items-start">
-      {/* Left: milestone table */}
-      <div className="flex-1 min-w-0 space-y-3">
+    <div className="space-y-6">
+      {/* Milestone table */}
+      <div className="space-y-3">
         {rows.length === 0 && <p className="text-[#94A3B8] text-sm">No milestones added yet.</p>}
+
         {rows.length > 0 && (
-          <div className="flex gap-2 items-center px-1">
-            <span className="w-5 shrink-0" />
-            <span className="flex-[2] text-[#94A3B8] text-xs uppercase tracking-wider font-medium">Milestone Details</span>
-            <span className="w-40 shrink-0 text-[#94A3B8] text-xs uppercase tracking-wider font-medium">Owner</span>
-            <span className="w-32 shrink-0 text-[#94A3B8] text-xs uppercase tracking-wider font-medium">Owner Email</span>
-            <span className="w-32 shrink-0 text-[#94A3B8] text-xs uppercase tracking-wider font-medium">Projected</span>
-            <span className="w-32 shrink-0 text-[#94A3B8] text-xs uppercase tracking-wider font-medium">Actual</span>
-            <span className="w-24 shrink-0 text-[#94A3B8] text-xs uppercase tracking-wider font-medium">Status</span>
-            <span className="flex-1 text-[#94A3B8] text-xs uppercase tracking-wider font-medium">Notes</span>
-            <span className="w-36 shrink-0 text-[#94A3B8] text-xs uppercase tracking-wider font-medium">Tasks</span>
-            <span className="w-4 shrink-0" />
+          <div className="overflow-x-auto">
+            <div className="min-w-max space-y-2">
+              {/* Header */}
+              <div className="flex gap-2 items-center px-1">
+                <span className="w-5 shrink-0" />
+                <span className="w-56 shrink-0 text-[#94A3B8] text-xs uppercase tracking-wider font-medium">Milestone Details</span>
+                <span className="w-40 shrink-0 text-[#94A3B8] text-xs uppercase tracking-wider font-medium">Owner</span>
+                <span className="w-44 shrink-0 text-[#94A3B8] text-xs uppercase tracking-wider font-medium">Owner Email</span>
+                <span className="w-32 shrink-0 text-[#94A3B8] text-xs uppercase tracking-wider font-medium">Projected</span>
+                <span className="w-32 shrink-0 text-[#94A3B8] text-xs uppercase tracking-wider font-medium">Actual</span>
+                <span className="w-28 shrink-0 text-[#94A3B8] text-xs uppercase tracking-wider font-medium">Status</span>
+                <span className="w-48 shrink-0 text-[#94A3B8] text-xs uppercase tracking-wider font-medium">Notes</span>
+                <span className="w-36 shrink-0 text-[#94A3B8] text-xs uppercase tracking-wider font-medium">Tasks</span>
+                <span className="w-4 shrink-0" />
+              </div>
+
+              {/* Rows */}
+              {rows.map((row, i) => (
+                <div
+                  key={i}
+                  className="flex gap-2 items-center"
+                  draggable
+                  onDragStart={() => setDragIndex(i)}
+                  onDragOver={e => {
+                    e.preventDefault()
+                    if (dragIndex !== null && dragIndex !== i) {
+                      const next = [...rows]
+                      const [dragged] = next.splice(dragIndex, 1)
+                      next.splice(i, 0, dragged)
+                      setRows(next)
+                      setDragIndex(i)
+                    }
+                  }}
+                  onDragEnd={() => setDragIndex(null)}
+                >
+                  <button type="button" className="cursor-grab text-[#94A3B8] hover:text-white shrink-0 w-5" draggable={false}>
+                    <svg width="12" height="16" viewBox="0 0 12 16" fill="currentColor">
+                      <circle cx="3" cy="3" r="1.5"/><circle cx="9" cy="3" r="1.5"/>
+                      <circle cx="3" cy="8" r="1.5"/><circle cx="9" cy="8" r="1.5"/>
+                      <circle cx="3" cy="13" r="1.5"/><circle cx="9" cy="13" r="1.5"/>
+                    </svg>
+                  </button>
+                  <input value={row.details} onChange={e => updateRow(i, 'details', e.target.value)} className={`${inputClass} w-56 shrink-0`} placeholder="Milestone details" />
+                  <select value={row.owner} onChange={e => updateRow(i, 'owner', e.target.value)} className={`${inputClass} w-40 shrink-0`}>
+                    <option value="">— Select —</option>
+                    {MANAGERS.map(m => <option key={m.name} value={m.name}>{m.name}</option>)}
+                  </select>
+                  <input value={row.owner_email} readOnly className={`${readonlyClass} w-44 shrink-0`} placeholder="Auto-filled" />
+                  <input type="date" value={row.projected_date} onChange={e => updateRow(i, 'projected_date', e.target.value)} className={`${inputClass} w-32 shrink-0`} style={getProjectedDateStyle(row.projected_date, row.actualized_date)} />
+                  <input type="date" value={row.actualized_date} onChange={e => updateRow(i, 'actualized_date', e.target.value)} className={`${inputClass} w-32 shrink-0`} />
+                  <select value={row.status} onChange={e => updateRow(i, 'status', e.target.value)} className={`${inputClass} w-28 shrink-0`}>
+                    <option value="Active">Active</option>
+                    <option value="Completed">Completed</option>
+                  </select>
+                  <input value={row.notes} onChange={e => updateRow(i, 'notes', e.target.value)} className={`${inputClass} w-48 shrink-0`} placeholder="Notes" />
+                  <div className="w-36 shrink-0 flex gap-1">
+                    <button type="button" onClick={() => openAddTasks(i)} className="flex-1 bg-[#F5C518] hover:bg-[#D4A800] text-[#0B1929] text-xs font-semibold py-1.5 px-2 rounded transition-colors">
+                      Add Tasks
+                    </button>
+                    <button type="button" onClick={() => openViewTasks(i)} className="flex-1 bg-green-600 hover:bg-green-700 text-white text-xs font-semibold py-1.5 px-2 rounded transition-colors">
+                      View Tasks
+                    </button>
+                  </div>
+                  <button type="button" onClick={() => deleteRow(i)} aria-label="Delete milestone" className="text-[#94A3B8] hover:text-[#C8102E] transition-colors shrink-0">
+                    <TrashIcon />
+                  </button>
+                </div>
+              ))}
+            </div>
           </div>
         )}
-        {rows.map((row, i) => (
-          <div
-            key={i}
-            className="flex gap-2 items-center"
-            draggable
-            onDragStart={() => setDragIndex(i)}
-            onDragOver={e => {
-              e.preventDefault()
-              if (dragIndex !== null && dragIndex !== i) {
-                const next = [...rows]
-                const [dragged] = next.splice(dragIndex, 1)
-                next.splice(i, 0, dragged)
-                setRows(next)
-                setDragIndex(i)
-              }
-            }}
-            onDragEnd={() => setDragIndex(null)}
-          >
-            <button type="button" className="cursor-grab text-[#94A3B8] hover:text-white shrink-0 w-5" draggable={false}>
-              <svg width="12" height="16" viewBox="0 0 12 16" fill="currentColor">
-                <circle cx="3" cy="3" r="1.5"/><circle cx="9" cy="3" r="1.5"/>
-                <circle cx="3" cy="8" r="1.5"/><circle cx="9" cy="8" r="1.5"/>
-                <circle cx="3" cy="13" r="1.5"/><circle cx="9" cy="13" r="1.5"/>
-              </svg>
-            </button>
-            <input value={row.details} onChange={e => updateRow(i, 'details', e.target.value)} className={`${inputClass} flex-[2]`} placeholder="Milestone details" />
-            <select value={row.owner} onChange={e => updateRow(i, 'owner', e.target.value)} className={`${inputClass} w-40 shrink-0`}>
-              <option value="">— Select —</option>
-              {MANAGERS.map(m => <option key={m.name} value={m.name}>{m.name}</option>)}
-            </select>
-            <input value={row.owner_email} readOnly className={`${readonlyClass} w-32 shrink-0`} placeholder="Auto-filled" />
-            <input type="date" value={row.projected_date} onChange={e => updateRow(i, 'projected_date', e.target.value)} className={`${inputClass} w-32 shrink-0`} style={getProjectedDateStyle(row.projected_date, row.actualized_date)} />
-            <input type="date" value={row.actualized_date} onChange={e => updateRow(i, 'actualized_date', e.target.value)} className={`${inputClass} w-32 shrink-0`} />
-            <select value={row.status} onChange={e => updateRow(i, 'status', e.target.value)} className={`${inputClass} w-24 shrink-0`}>
-              <option value="Active">Active</option>
-              <option value="Completed">Completed</option>
-            </select>
-            <input value={row.notes} onChange={e => updateRow(i, 'notes', e.target.value)} className={`${inputClass} flex-1`} placeholder="Notes" />
-            <div className="w-36 shrink-0 flex gap-1">
-              <button type="button" onClick={() => openAddTasks(i)} className="flex-1 bg-[#F5C518] hover:bg-[#D4A800] text-[#0B1929] text-xs font-semibold py-1.5 px-2 rounded transition-colors">
-                Add Tasks
-              </button>
-              <button type="button" onClick={() => openViewTasks(i)} className="flex-1 bg-green-600 hover:bg-green-700 text-white text-xs font-semibold py-1.5 px-2 rounded transition-colors">
-                View Tasks
-              </button>
-            </div>
-            <button type="button" onClick={() => deleteRow(i)} aria-label="Delete milestone" className="text-[#94A3B8] hover:text-[#C8102E] transition-colors shrink-0">
-              <TrashIcon />
-            </button>
-          </div>
-        ))}
+
         {showUndo && (
           <div className="flex items-center justify-between bg-[#1E3A5F] rounded-lg px-4 py-2 text-sm">
             <span className="text-[#94A3B8]">Milestone deleted.</span>
@@ -404,9 +413,9 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
         </div>
       </div>
 
-      {/* Right: Project Notes */}
-      <div className="w-72 shrink-0 flex flex-col gap-3">
-        <div className="flex items-center justify-between">
+      {/* Project Notes — below the table, full width */}
+      <div className="border-t border-[#1E3A5F] pt-5">
+        <div className="flex items-center justify-between mb-3">
           <span className="text-[#94A3B8] text-xs uppercase tracking-wider font-medium">Project Notes</span>
           <button type="button" onClick={() => { setNewNoteText(''); setShowAddNote(true) }}
             className="text-xs bg-[#1E3A5F] hover:bg-[#334E6A] text-[#94A3B8] hover:text-white px-3 py-1.5 rounded transition-colors font-medium">
@@ -414,14 +423,16 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
           </button>
         </div>
         {notes.length === 0 && <p className="text-[#94A3B8] text-xs italic">No notes yet.</p>}
-        {notes.map(note => (
-          <div key={note.id} className="bg-[#0B1929] border border-[#1E3A5F] rounded-lg p-3">
-            <p className="text-white text-sm whitespace-pre-wrap">{note.text}</p>
-            <p className="text-[#94A3B8] text-xs mt-2">
-              {new Date(note.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-            </p>
-          </div>
-        ))}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {notes.map(note => (
+            <div key={note.id} className="bg-[#0B1929] border border-[#1E3A5F] rounded-lg p-3">
+              <p className="text-white text-sm whitespace-pre-wrap">{note.text}</p>
+              <p className="text-[#94A3B8] text-xs mt-2">
+                {new Date(note.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+              </p>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Add Note Modal */}
