@@ -1,13 +1,12 @@
 'use client'
-import { useState, useEffect, useRef } from 'react'
+import { Fragment, useState, useEffect, useRef } from 'react'
 import TrashIcon from '@/components/icons/TrashIcon'
 import { MilestoneRow, MilestoneTask, ProjectNote } from '@/types/milestone'
 import { MANAGERS } from '@/lib/managers'
 
-const inputClass = 'w-full bg-[#0B1929] border border-[#1E3A5F] rounded-md px-3 py-2 text-white text-sm placeholder-[#8899AA] focus:outline-none focus:ring-2 focus:ring-[#C8102E] focus:border-transparent transition-colors'
-const readonlyClass = 'w-full bg-[#0D1F35] border border-[#1E3A5F] rounded-md px-3 py-2 text-[#94A3B8] text-sm cursor-not-allowed'
 const cellInput = 'w-full bg-[#0B1929] border border-[#1E3A5F] rounded-md px-2 py-2 text-white text-sm placeholder-[#8899AA] focus:outline-none focus:ring-2 focus:ring-[#C8102E] focus:border-transparent transition-colors'
 const cellReadonly = 'w-full bg-[#0D1F35] border border-[#1E3A5F] rounded-md px-2 py-2 text-[#94A3B8] text-sm cursor-not-allowed'
+const modalInput = 'w-full bg-[#0B1929] border border-[#1E3A5F] rounded-md px-3 py-2 text-white text-sm placeholder-[#8899AA] focus:outline-none focus:ring-2 focus:ring-[#C8102E] focus:border-transparent transition-colors'
 
 type Props = {
   projectId: string
@@ -18,9 +17,7 @@ type Props = {
 function getProjectedDateStyle(projected: string, actualized: string): React.CSSProperties {
   if (!projected) return {}
   const today = new Date().toISOString().split('T')[0]
-  if (actualized) {
-    return actualized <= projected ? { color: '#4ade80' } : {}
-  }
+  if (actualized) return actualized <= projected ? { color: '#4ade80' } : {}
   return projected < today ? { color: '#f87171' } : {}
 }
 
@@ -34,18 +31,18 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
   const [showUndo, setShowUndo] = useState(false)
   const [dragIndex, setDragIndex] = useState<number | null>(null)
 
-  // Notes state
+  // Inline task expansion
+  const [expandedIndex, setExpandedIndex] = useState<number | null>(null)
+  const [editingTasks, setEditingTasks] = useState<MilestoneTask[]>([])
+  const [savingTasks, setSavingTasks] = useState(false)
+
+  // Notes
   const [notes, setNotes] = useState<ProjectNote[]>([])
   const [showAddNote, setShowAddNote] = useState(false)
   const [newNoteText, setNewNoteText] = useState('')
   const [savingNote, setSavingNote] = useState(false)
 
-  // Tasks popup state
-  const [taskPopup, setTaskPopup] = useState<{ index: number; mode: 'add' | 'view' } | null>(null)
-  const [editingTasks, setEditingTasks] = useState<MilestoneTask[]>([])
-  const [savingTasks, setSavingTasks] = useState(false)
-
-  // Template modal state
+  // Template modal
   const [showTemplateModal, setShowTemplateModal] = useState(false)
   const [templateName, setTemplateName] = useState('')
   const [savingTemplate, setSavingTemplate] = useState(false)
@@ -65,12 +62,9 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
           fetch(`/api/projects/${projectId}/milestones`),
           fetch(`/api/projects/${projectId}/notes`),
         ])
-
         const milestonesData: { milestones: Array<{ id: string; details: string | null; owner: string | null; projected_date: string | null; actualized_date: string | null; notes: string | null; status: string | null; tasks: MilestoneTask[] }>; project_notes: string } = await milestonesRes.json()
         const notesData: ProjectNote[] = await notesRes.json()
-
         setNotes(notesData)
-
         const milestones = milestonesData.milestones ?? []
 
         if (milestones.length === 0 && projectTemplate) {
@@ -89,17 +83,15 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
                 tasks: (item.tasks ?? []).map(t => ({ task: t.task })),
               }))
             setRows(preFilled)
-            // Auto-save milestones
             try {
               const res = await fetch(`/api/projects/${projectId}/milestones`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ milestones: preFilled.map((r, i) => ({ ...r, sort_order: i })), deleted_ids: [], project_notes: undefined }),
+                body: JSON.stringify({ milestones: preFilled.map((r, i) => ({ ...r, sort_order: i })), deleted_ids: [] }),
               })
               if (res.ok) {
                 const saved = await res.json()
                 const savedMilestones = saved.milestones ?? []
-                // Save tasks for each milestone
                 for (let i = 0; i < savedMilestones.length; i++) {
                   const m = savedMilestones[i]
                   const templateTasks = preFilled[i]?.tasks ?? []
@@ -111,7 +103,6 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
                     })
                   }
                 }
-                // Reload milestones with tasks
                 const reloadRes = await fetch(`/api/projects/${projectId}/milestones`)
                 const reloaded = await reloadRes.json()
                 setRows((reloaded.milestones ?? []).map((m: typeof milestones[0]) => ({
@@ -154,15 +145,15 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
     setRows(r => r.map((row, i) => {
       if (i !== index) return row
       const updated = { ...row, [field]: value }
-      if (field === 'owner') {
-        updated.owner_email = MANAGERS.find(m => m.name === value)?.email ?? ''
-      }
+      if (field === 'owner') updated.owner_email = MANAGERS.find(m => m.name === value)?.email ?? ''
       return updated
     }))
   }
 
   function deleteRow(index: number) {
     const row = rows[index]
+    if (expandedIndex === index) { setExpandedIndex(null); setEditingTasks([]) }
+    else if (expandedIndex !== null && expandedIndex > index) setExpandedIndex(expandedIndex - 1)
     setRows(r => r.filter((_, i) => i !== index))
     if (pendingDeleteRef.current) {
       if (pendingTimerRef.current) clearTimeout(pendingTimerRef.current)
@@ -186,6 +177,42 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
     pendingDeleteRef.current = null
     pendingTimerRef.current = null
     setShowUndo(false)
+  }
+
+  function toggleExpand(index: number) {
+    if (expandedIndex === index) {
+      setExpandedIndex(null)
+      setEditingTasks([])
+    } else {
+      setExpandedIndex(index)
+      const row = rows[index]
+      setEditingTasks(row.tasks.length > 0 ? row.tasks.map(t => ({ ...t })) : [{ task: '' }])
+    }
+  }
+
+  async function saveExpandedTasks() {
+    if (expandedIndex === null) return
+    const row = rows[expandedIndex]
+    if (!row.id) {
+      alert('Please save the milestone first before adding tasks.')
+      return
+    }
+    setSavingTasks(true)
+    try {
+      const res = await fetch(`/api/projects/${projectId}/milestone-tasks`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ milestone_id: row.id, tasks: editingTasks.filter(t => t.task.trim()) }),
+      })
+      if (!res.ok) throw new Error()
+      const { tasks } = await res.json()
+      setRows(r => r.map((r2, i) => i === expandedIndex ? { ...r2, tasks: tasks ?? [] } : r2))
+      setEditingTasks(tasks ?? [])
+    } catch {
+      alert('Failed to save tasks. Please try again.')
+    } finally {
+      setSavingTasks(false)
+    }
   }
 
   async function save() {
@@ -221,42 +248,6 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
       setSaveError(true)
     } finally {
       setSaving(false)
-    }
-  }
-
-  // Add/View tasks popup
-  function openAddTasks(index: number) {
-    const row = rows[index]
-    setEditingTasks(row.tasks.length > 0 ? row.tasks.map(t => ({ ...t })) : [{ task: '' }])
-    setTaskPopup({ index, mode: 'add' })
-  }
-
-  function openViewTasks(index: number) {
-    setTaskPopup({ index, mode: 'view' })
-  }
-
-  async function saveTasksForRow() {
-    if (!taskPopup) return
-    const row = rows[taskPopup.index]
-    if (!row.id) {
-      alert('Please save the milestone first before adding tasks.')
-      return
-    }
-    setSavingTasks(true)
-    try {
-      const res = await fetch(`/api/projects/${projectId}/milestone-tasks`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ milestone_id: row.id, tasks: editingTasks.filter(t => t.task.trim()) }),
-      })
-      if (!res.ok) throw new Error()
-      const { tasks } = await res.json()
-      setRows(r => r.map((row2, i) => i === taskPopup.index ? { ...row2, tasks: tasks ?? [] } : row2))
-      setTaskPopup(null)
-    } catch {
-      alert('Failed to save tasks. Please try again.')
-    } finally {
-      setSavingTasks(false)
     }
   }
 
@@ -312,28 +303,26 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
   if (loading) return <p className="text-[#94A3B8] text-sm">Loading...</p>
   if (fetchError) return <p className="text-[#F87171] text-sm">Failed to load. Please refresh.</p>
 
-  const currentTasks = taskPopup !== null ? rows[taskPopup.index]?.tasks ?? [] : []
-
   return (
-    <div className="space-y-6">
-      {/* Milestone table */}
-      <div className="space-y-3">
+    <div className="flex gap-5 items-start">
+      {/* Left: milestone table */}
+      <div className="flex-1 min-w-0 space-y-3">
         {rows.length === 0 && <p className="text-[#94A3B8] text-sm">No milestones added yet.</p>}
 
         {rows.length > 0 && (
           <div className="overflow-x-auto">
-            <table className="border-separate border-spacing-0" style={{ minWidth: 1080 }}>
+            <table className="w-full" style={{ tableLayout: 'auto', minWidth: 680 }}>
               <colgroup>
+                <col style={{ width: 24 }} />
+                {/* details — grows */}
+                <col style={{ width: 144 }} />
+                <col style={{ width: 168 }} />
+                <col style={{ width: 116 }} />
+                <col style={{ width: 116 }} />
+                <col style={{ width: 96 }} />
+                {/* notes — grows */}
                 <col style={{ width: 28 }} />
-                <col style={{ width: 220 }} />
-                <col style={{ width: 156 }} />
-                <col style={{ width: 196 }} />
-                <col style={{ width: 132 }} />
-                <col style={{ width: 132 }} />
-                <col style={{ width: 110 }} />
-                <col style={{ width: 180 }} />
-                <col style={{ width: 148 }} />
-                <col style={{ width: 28 }} />
+                <col style={{ width: 24 }} />
               </colgroup>
               <thead>
                 <tr>
@@ -345,80 +334,140 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
                   <th className="text-left pb-2 pr-2 text-[#94A3B8] text-xs uppercase tracking-wider font-medium">Actual</th>
                   <th className="text-left pb-2 pr-2 text-[#94A3B8] text-xs uppercase tracking-wider font-medium">Status</th>
                   <th className="text-left pb-2 pr-2 text-[#94A3B8] text-xs uppercase tracking-wider font-medium">Notes</th>
-                  <th className="text-left pb-2 pr-2 text-[#94A3B8] text-xs uppercase tracking-wider font-medium">Tasks</th>
+                  <th />
                   <th />
                 </tr>
               </thead>
               <tbody>
                 {rows.map((row, i) => (
-                  <tr
-                    key={i}
-                    draggable
-                    onDragStart={() => setDragIndex(i)}
-                    onDragOver={e => {
-                      e.preventDefault()
-                      if (dragIndex !== null && dragIndex !== i) {
-                        const next = [...rows]
-                        const [dragged] = next.splice(dragIndex, 1)
-                        next.splice(i, 0, dragged)
-                        setRows(next)
-                        setDragIndex(i)
-                      }
-                    }}
-                    onDragEnd={() => setDragIndex(null)}
-                  >
-                    <td className="py-1 pr-2 align-middle">
-                      <button type="button" className="cursor-grab text-[#94A3B8] hover:text-white" draggable={false}>
-                        <svg width="12" height="16" viewBox="0 0 12 16" fill="currentColor">
-                          <circle cx="3" cy="3" r="1.5"/><circle cx="9" cy="3" r="1.5"/>
-                          <circle cx="3" cy="8" r="1.5"/><circle cx="9" cy="8" r="1.5"/>
-                          <circle cx="3" cy="13" r="1.5"/><circle cx="9" cy="13" r="1.5"/>
-                        </svg>
-                      </button>
-                    </td>
-                    <td className="py-1 pr-2">
-                      <input value={row.details} onChange={e => updateRow(i, 'details', e.target.value)} className={cellInput} placeholder="Milestone details" />
-                    </td>
-                    <td className="py-1 pr-2">
-                      <select value={row.owner} onChange={e => updateRow(i, 'owner', e.target.value)} className={cellInput}>
-                        <option value="">— Select —</option>
-                        {MANAGERS.map(m => <option key={m.name} value={m.name}>{m.name}</option>)}
-                      </select>
-                    </td>
-                    <td className="py-1 pr-2">
-                      <input value={row.owner_email} readOnly className={cellReadonly} placeholder="Auto-filled" />
-                    </td>
-                    <td className="py-1 pr-2">
-                      <input type="date" value={row.projected_date} onChange={e => updateRow(i, 'projected_date', e.target.value)} className={cellInput} style={getProjectedDateStyle(row.projected_date, row.actualized_date)} />
-                    </td>
-                    <td className="py-1 pr-2">
-                      <input type="date" value={row.actualized_date} onChange={e => updateRow(i, 'actualized_date', e.target.value)} className={cellInput} />
-                    </td>
-                    <td className="py-1 pr-2">
-                      <select value={row.status} onChange={e => updateRow(i, 'status', e.target.value)} className={cellInput}>
-                        <option value="Active">Active</option>
-                        <option value="Completed">Completed</option>
-                      </select>
-                    </td>
-                    <td className="py-1 pr-2">
-                      <input value={row.notes} onChange={e => updateRow(i, 'notes', e.target.value)} className={cellInput} placeholder="Notes" />
-                    </td>
-                    <td className="py-1 pr-2">
-                      <div className="flex gap-1">
-                        <button type="button" onClick={() => openAddTasks(i)} className="flex-1 bg-[#F5C518] hover:bg-[#D4A800] text-[#0B1929] text-xs font-semibold py-1.5 px-1 rounded transition-colors whitespace-nowrap">
-                          Add Tasks
+                  <Fragment key={i}>
+                    <tr
+                      draggable
+                      onDragStart={() => setDragIndex(i)}
+                      onDragOver={e => {
+                        e.preventDefault()
+                        if (dragIndex !== null && dragIndex !== i) {
+                          const next = [...rows]
+                          const [dragged] = next.splice(dragIndex, 1)
+                          next.splice(i, 0, dragged)
+                          setRows(next)
+                          setDragIndex(i)
+                        }
+                      }}
+                      onDragEnd={() => setDragIndex(null)}
+                    >
+                      <td className="py-1 pr-1 align-middle">
+                        <button type="button" className="cursor-grab text-[#94A3B8] hover:text-white" draggable={false}>
+                          <svg width="10" height="14" viewBox="0 0 10 14" fill="currentColor">
+                            <circle cx="2" cy="2" r="1.5"/><circle cx="8" cy="2" r="1.5"/>
+                            <circle cx="2" cy="7" r="1.5"/><circle cx="8" cy="7" r="1.5"/>
+                            <circle cx="2" cy="12" r="1.5"/><circle cx="8" cy="12" r="1.5"/>
+                          </svg>
                         </button>
-                        <button type="button" onClick={() => openViewTasks(i)} className="flex-1 bg-green-600 hover:bg-green-700 text-white text-xs font-semibold py-1.5 px-1 rounded transition-colors whitespace-nowrap">
-                          View Tasks
+                      </td>
+                      <td className="py-1 pr-2">
+                        <input value={row.details} onChange={e => updateRow(i, 'details', e.target.value)} className={cellInput} placeholder="Milestone details" />
+                      </td>
+                      <td className="py-1 pr-2">
+                        <select value={row.owner} onChange={e => updateRow(i, 'owner', e.target.value)} className={cellInput}>
+                          <option value="">— Select —</option>
+                          {MANAGERS.map(m => <option key={m.name} value={m.name}>{m.name}</option>)}
+                        </select>
+                      </td>
+                      <td className="py-1 pr-2">
+                        <input value={row.owner_email} readOnly className={cellReadonly} placeholder="Auto-filled" />
+                      </td>
+                      <td className="py-1 pr-2">
+                        <input type="date" value={row.projected_date} onChange={e => updateRow(i, 'projected_date', e.target.value)} className={cellInput} style={getProjectedDateStyle(row.projected_date, row.actualized_date)} />
+                      </td>
+                      <td className="py-1 pr-2">
+                        <input type="date" value={row.actualized_date} onChange={e => updateRow(i, 'actualized_date', e.target.value)} className={cellInput} />
+                      </td>
+                      <td className="py-1 pr-2">
+                        <select value={row.status} onChange={e => updateRow(i, 'status', e.target.value)} className={cellInput}>
+                          <option value="Active">Active</option>
+                          <option value="Completed">Completed</option>
+                        </select>
+                      </td>
+                      <td className="py-1 pr-2">
+                        <input value={row.notes} onChange={e => updateRow(i, 'notes', e.target.value)} className={cellInput} placeholder="Notes" />
+                      </td>
+                      <td className="py-1 pr-1 align-middle">
+                        <button
+                          type="button"
+                          onClick={() => toggleExpand(i)}
+                          aria-label={expandedIndex === i ? 'Collapse tasks' : 'Expand tasks'}
+                          className="text-[#94A3B8] hover:text-white transition-colors"
+                        >
+                          <svg
+                            width="16" height="16" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                            className={`transition-transform duration-150 ${expandedIndex === i ? 'rotate-90' : ''}`}
+                          >
+                            <polyline points="9 18 15 12 9 6" />
+                          </svg>
                         </button>
-                      </div>
-                    </td>
-                    <td className="py-1 align-middle">
-                      <button type="button" onClick={() => deleteRow(i)} aria-label="Delete milestone" className="text-[#94A3B8] hover:text-[#C8102E] transition-colors">
-                        <TrashIcon />
-                      </button>
-                    </td>
-                  </tr>
+                      </td>
+                      <td className="py-1 align-middle">
+                        <button type="button" onClick={() => deleteRow(i)} aria-label="Delete milestone" className="text-[#94A3B8] hover:text-[#C8102E] transition-colors">
+                          <TrashIcon />
+                        </button>
+                      </td>
+                    </tr>
+
+                    {/* Inline task editor */}
+                    {expandedIndex === i && (
+                      <tr>
+                        <td colSpan={10} className="pb-3 pt-0">
+                          <div className="ml-6 mr-1 bg-[#0B1929] border border-[#1E3A5F] rounded-lg p-4">
+                            <p className="text-[#94A3B8] text-xs uppercase tracking-wider font-medium mb-3">
+                              Tasks — {row.details || '(untitled milestone)'}
+                            </p>
+                            {editingTasks.length === 0 && (
+                              <p className="text-[#94A3B8] text-xs italic mb-2">No tasks added yet.</p>
+                            )}
+                            <div className="space-y-2">
+                              {editingTasks.map((t, ti) => (
+                                <div key={ti} className="flex gap-2 items-center">
+                                  <span className="text-[#94A3B8] text-xs w-5 shrink-0 text-right">{ti + 1}.</span>
+                                  <input
+                                    value={t.task}
+                                    onChange={e => setEditingTasks(ts => ts.map((x, xi) => xi === ti ? { ...x, task: e.target.value } : x))}
+                                    className={modalInput}
+                                    placeholder="Specify task..."
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => setEditingTasks(ts => ts.filter((_, xi) => xi !== ti))}
+                                    className="text-[#94A3B8] hover:text-[#C8102E] transition-colors shrink-0"
+                                  >
+                                    <TrashIcon />
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                            <div className="flex items-center justify-between mt-3">
+                              <button
+                                type="button"
+                                onClick={() => setEditingTasks(ts => [...ts, { task: '' }])}
+                                className="text-[#94A3B8] hover:text-white text-xs transition-colors"
+                              >
+                                + Add Task
+                              </button>
+                              <button
+                                type="button"
+                                onClick={saveExpandedTasks}
+                                disabled={savingTasks}
+                                className="bg-[#C8102E] hover:bg-[#A50E25] disabled:opacity-60 disabled:cursor-not-allowed text-white text-xs font-semibold px-4 py-1.5 rounded-md transition-colors"
+                              >
+                                {savingTasks ? 'Saving...' : 'Save Tasks'}
+                              </button>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
                 ))}
               </tbody>
             </table>
@@ -431,45 +480,59 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
             <button type="button" onClick={undoDelete} className="text-[#C8102E] hover:text-white font-medium ml-4 transition-colors">Undo</button>
           </div>
         )}
+
         <div className="flex items-center justify-between pt-2">
           <button type="button" onClick={addRow} className="text-[#94A3B8] hover:text-white text-sm font-medium transition-colors">+ Add Milestone</button>
           <div className="flex items-center gap-3">
             {saveError && <p className="text-[#F87171] text-xs">Failed to save. Please try again.</p>}
-            <button type="button" onClick={() => setShowTemplateModal(true)} disabled={rows.length === 0}
-              className="bg-[#F5C518] hover:bg-[#D4A800] disabled:opacity-40 disabled:cursor-not-allowed text-[#0B1929] font-semibold px-6 py-2.5 rounded-lg transition-colors text-sm uppercase tracking-widest">
+            <button
+              type="button"
+              onClick={() => setShowTemplateModal(true)}
+              disabled={rows.length === 0}
+              className="bg-[#F5C518] hover:bg-[#D4A800] disabled:opacity-40 disabled:cursor-not-allowed text-[#0B1929] font-semibold px-6 py-2.5 rounded-lg transition-colors text-sm uppercase tracking-widest"
+            >
               Save As Template
             </button>
-            <button type="button" onClick={save} disabled={saving}
-              className="bg-[#C8102E] hover:bg-[#A50E25] disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold px-6 py-2.5 rounded-lg transition-colors text-sm uppercase tracking-widest">
+            <button
+              type="button"
+              onClick={save}
+              disabled={saving}
+              className="bg-[#C8102E] hover:bg-[#A50E25] disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold px-6 py-2.5 rounded-lg transition-colors text-sm uppercase tracking-widest"
+            >
               {saving ? 'Saving...' : 'Save Changes'}
             </button>
           </div>
         </div>
       </div>
 
-      {/* Project Notes — below the table, full width */}
-      <div className="border-t border-[#1E3A5F] pt-5">
-        <div className="flex items-center justify-between mb-3">
-          <span className="text-[#94A3B8] text-xs uppercase tracking-wider font-medium">Project Notes</span>
-          <button type="button" onClick={() => { setNewNoteText(''); setShowAddNote(true) }}
-            className="text-xs bg-[#1E3A5F] hover:bg-[#334E6A] text-[#94A3B8] hover:text-white px-3 py-1.5 rounded transition-colors font-medium">
-            + Add Note
-          </button>
-        </div>
-        {notes.length === 0 && <p className="text-[#94A3B8] text-xs italic">No notes yet.</p>}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {notes.map(note => (
-            <div key={note.id} className="bg-[#0B1929] border border-[#1E3A5F] rounded-lg p-3">
-              <p className="text-white text-sm whitespace-pre-wrap">{note.text}</p>
-              <p className="text-[#94A3B8] text-xs mt-2">
-                {new Date(note.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-              </p>
-            </div>
-          ))}
+      {/* Right: Project Notes — fixed height, own scrollbar */}
+      <div className="w-72 shrink-0">
+        <div className="bg-[#112240] border border-[#1E3A5F] rounded-xl flex flex-col" style={{ height: 500 }}>
+          <div className="flex items-center justify-between px-4 py-3 border-b border-[#1E3A5F] shrink-0">
+            <span className="text-[#94A3B8] text-xs uppercase tracking-wider font-medium">Project Notes</span>
+            <button
+              type="button"
+              onClick={() => { setNewNoteText(''); setShowAddNote(true) }}
+              className="text-xs bg-[#1E3A5F] hover:bg-[#334E6A] text-[#94A3B8] hover:text-white px-3 py-1.5 rounded transition-colors font-medium"
+            >
+              + Add Note
+            </button>
+          </div>
+          <div className="flex-1 overflow-y-auto p-3 space-y-2">
+            {notes.length === 0 && <p className="text-[#94A3B8] text-xs italic">No notes yet.</p>}
+            {notes.map(note => (
+              <div key={note.id} className="bg-[#0B1929] border border-[#1E3A5F] rounded-lg p-3">
+                <p className="text-white text-xs whitespace-pre-wrap leading-relaxed">{note.text}</p>
+                <p className="text-[#94A3B8] text-[10px] mt-1.5">
+                  {new Date(note.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                </p>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
-      {/* Add Note Modal */}
+      {/* Add Note modal */}
       {showAddNote && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
           <div className="bg-[#112240] border border-[#1E3A5F] rounded-xl p-6 w-full max-w-md mx-4 shadow-xl">
@@ -479,16 +542,23 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
               onChange={e => setNewNoteText(e.target.value)}
               placeholder="Write your note..."
               autoFocus
-              className={`${inputClass} resize-none`}
+              className={`${modalInput} resize-none`}
               rows={6}
             />
             <div className="flex gap-3 mt-4">
-              <button type="button" onClick={() => setShowAddNote(false)}
-                className="flex-1 border border-[#1E3A5F] text-[#94A3B8] hover:text-white hover:border-white rounded-lg py-2.5 text-sm font-medium transition-colors">
+              <button
+                type="button"
+                onClick={() => setShowAddNote(false)}
+                className="flex-1 border border-[#1E3A5F] text-[#94A3B8] hover:text-white hover:border-white rounded-lg py-2.5 text-sm font-medium transition-colors"
+              >
                 Cancel
               </button>
-              <button type="button" onClick={saveNote} disabled={savingNote || !newNoteText.trim()}
-                className="flex-1 bg-[#C8102E] hover:bg-[#A50E25] disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold py-2.5 rounded-lg text-sm transition-colors">
+              <button
+                type="button"
+                onClick={saveNote}
+                disabled={savingNote || !newNoteText.trim()}
+                className="flex-1 bg-[#C8102E] hover:bg-[#A50E25] disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold py-2.5 rounded-lg text-sm transition-colors"
+              >
                 {savingNote ? 'Saving...' : 'Save Note'}
               </button>
             </div>
@@ -496,99 +566,34 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
         </div>
       )}
 
-      {/* Add Tasks Modal */}
-      {taskPopup?.mode === 'add' && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-          <div className="bg-[#112240] border border-[#1E3A5F] rounded-xl p-6 w-full max-w-lg mx-4 shadow-xl">
-            <h3 className="text-white font-semibold mb-4">
-              Add Tasks — {rows[taskPopup.index]?.details || '(untitled milestone)'}
-            </h3>
-            <div className="space-y-2 max-h-64 overflow-y-auto">
-              {editingTasks.map((t, ti) => (
-                <div key={ti} className="flex gap-2 items-center">
-                  <input
-                    value={t.task}
-                    onChange={e => setEditingTasks(ts => ts.map((x, xi) => xi === ti ? { ...x, task: e.target.value } : x))}
-                    className={`${inputClass} flex-1`}
-                    placeholder="Specify task..."
-                  />
-                  <button type="button" onClick={() => setEditingTasks(ts => ts.filter((_, xi) => xi !== ti))}
-                    className="text-[#94A3B8] hover:text-[#C8102E] transition-colors shrink-0">
-                    <TrashIcon />
-                  </button>
-                </div>
-              ))}
-            </div>
-            <button type="button" onClick={() => setEditingTasks(ts => [...ts, { task: '' }])}
-              className="text-[#94A3B8] hover:text-white text-sm mt-3 transition-colors">
-              + Add Task
-            </button>
-            <div className="flex gap-3 mt-4">
-              <button type="button" onClick={() => setTaskPopup(null)}
-                className="flex-1 border border-[#1E3A5F] text-[#94A3B8] hover:text-white hover:border-white rounded-lg py-2.5 text-sm font-medium transition-colors">
-                Discard Changes
-              </button>
-              <button type="button" onClick={saveTasksForRow} disabled={savingTasks}
-                className="flex-1 bg-[#C8102E] hover:bg-[#A50E25] disabled:opacity-60 text-white font-semibold py-2.5 rounded-lg text-sm transition-colors">
-                {savingTasks ? 'Saving...' : 'Save Changes'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* View Tasks Modal */}
-      {taskPopup?.mode === 'view' && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-          <div className="bg-[#112240] border border-[#1E3A5F] rounded-xl p-6 w-full max-w-lg mx-4 shadow-xl">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-white font-semibold">
-                Tasks — {rows[taskPopup.index]?.details || '(untitled milestone)'}
-              </h3>
-              <button type="button" onClick={() => setTaskPopup(null)} className="text-[#94A3B8] hover:text-white">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-              </button>
-            </div>
-            {currentTasks.length === 0 ? (
-              <p className="text-[#94A3B8] text-sm">No tasks added yet.</p>
-            ) : (
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-[#1E3A5F]">
-                    <th className="text-left py-2 text-[#94A3B8] text-xs uppercase tracking-wider font-medium">#</th>
-                    <th className="text-left py-2 text-[#94A3B8] text-xs uppercase tracking-wider font-medium">Task</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {currentTasks.map((t, ti) => (
-                    <tr key={ti} className="border-b border-[#1E3A5F]/50">
-                      <td className="py-2 text-[#94A3B8] pr-4">{ti + 1}</td>
-                      <td className="py-2 text-white">{t.task}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Save As Template Modal */}
+      {/* Save As Template modal */}
       {showTemplateModal && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
           <div className="bg-[#112240] border border-[#1E3A5F] rounded-xl p-6 w-full max-w-sm mx-4 shadow-xl">
             <h3 className="text-white font-semibold mb-4">Save As Template</h3>
-            <input type="text" value={templateName}
+            <input
+              type="text"
+              value={templateName}
               onChange={e => { setTemplateName(e.target.value); setTemplateSaveError('') }}
-              placeholder="Template name..." className={inputClass} autoFocus />
+              placeholder="Template name..."
+              className={modalInput}
+              autoFocus
+            />
             {templateSaveError && <p className="text-[#F87171] text-xs mt-1">{templateSaveError}</p>}
             <div className="flex gap-3 mt-4">
-              <button type="button" onClick={() => { setShowTemplateModal(false); setTemplateName(''); setTemplateSaveError('') }}
-                className="flex-1 border border-[#1E3A5F] text-[#94A3B8] hover:text-white hover:border-white rounded-lg py-2.5 text-sm font-medium transition-colors">
+              <button
+                type="button"
+                onClick={() => { setShowTemplateModal(false); setTemplateName(''); setTemplateSaveError('') }}
+                className="flex-1 border border-[#1E3A5F] text-[#94A3B8] hover:text-white hover:border-white rounded-lg py-2.5 text-sm font-medium transition-colors"
+              >
                 Cancel
               </button>
-              <button type="button" onClick={saveAsTemplate} disabled={savingTemplate || !templateName.trim()}
-                className="flex-1 bg-[#C8102E] hover:bg-[#A50E25] disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold py-2.5 rounded-lg text-sm transition-colors">
+              <button
+                type="button"
+                onClick={saveAsTemplate}
+                disabled={savingTemplate || !templateName.trim()}
+                className="flex-1 bg-[#C8102E] hover:bg-[#A50E25] disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold py-2.5 rounded-lg text-sm transition-colors"
+              >
                 {savingTemplate ? 'Saving...' : 'Save'}
               </button>
             </div>
