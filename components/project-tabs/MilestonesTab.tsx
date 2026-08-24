@@ -320,7 +320,7 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
                 <col style={{ width: 168 }} />
                 <col style={{ width: 116 }} />
                 <col style={{ width: 116 }} />
-                <col style={{ width: 96 }} />
+                <col style={{ width: 120 }} />
                 {/* notes — grows */}
                 <col style={{ width: 24 }} />
               </colgroup>
@@ -506,23 +506,23 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
       </div>
 
       {/* Right: Project Notes — fixed height, own scrollbar */}
-      <div className="w-72 shrink-0">
+      <div className="w-56 shrink-0">
         <div className="bg-[#112240] border border-[#1E3A5F] rounded-xl flex flex-col" style={{ height: 500 }}>
-          <div className="flex items-center justify-between px-4 py-3 border-b border-[#1E3A5F] shrink-0">
+          <div className="flex items-center justify-between px-3 py-3 border-b border-[#1E3A5F] shrink-0">
             <span className="text-[#94A3B8] text-xs uppercase tracking-wider font-medium">Project Notes</span>
             <button
               type="button"
               onClick={() => { setNewNoteText(''); setShowAddNote(true) }}
-              className="text-xs bg-[#1E3A5F] hover:bg-[#334E6A] text-[#94A3B8] hover:text-white px-3 py-1.5 rounded transition-colors font-medium"
+              className="text-xs bg-[#1E3A5F] hover:bg-[#334E6A] text-[#94A3B8] hover:text-white px-2 py-1 rounded transition-colors font-medium shrink-0"
             >
-              + Add Note
+              + Add
             </button>
           </div>
-          <div className="flex-1 overflow-y-auto p-3 space-y-2">
+          <div className="flex-1 overflow-y-auto overflow-x-hidden p-3 space-y-2">
             {notes.length === 0 && <p className="text-[#94A3B8] text-xs italic">No notes yet.</p>}
             {notes.map(note => (
               <div key={note.id} className="bg-[#0B1929] border border-[#1E3A5F] rounded-lg p-3">
-                <p className="text-white text-sm whitespace-pre-wrap leading-relaxed">{note.text}</p>
+                <p className="text-white text-sm whitespace-pre-wrap break-words leading-relaxed">{note.text}</p>
                 <p className="text-[#94A3B8] text-xs mt-2">
                   {new Date(note.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                 </p>
