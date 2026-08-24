@@ -314,6 +314,7 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
             <table className="w-full" style={{ tableLayout: 'auto', minWidth: 680 }}>
               <colgroup>
                 <col style={{ width: 24 }} />
+                <col style={{ width: 28 }} />
                 {/* details — grows */}
                 <col style={{ width: 144 }} />
                 <col style={{ width: 168 }} />
@@ -321,11 +322,11 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
                 <col style={{ width: 116 }} />
                 <col style={{ width: 96 }} />
                 {/* notes — grows */}
-                <col style={{ width: 28 }} />
                 <col style={{ width: 24 }} />
               </colgroup>
               <thead>
                 <tr>
+                  <th />
                   <th />
                   <th className="text-left pb-2 pr-2 text-[#94A3B8] text-xs uppercase tracking-wider font-medium">Milestone Details</th>
                   <th className="text-left pb-2 pr-2 text-[#94A3B8] text-xs uppercase tracking-wider font-medium">Owner</th>
@@ -334,7 +335,6 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
                   <th className="text-left pb-2 pr-2 text-[#94A3B8] text-xs uppercase tracking-wider font-medium">Actual</th>
                   <th className="text-left pb-2 pr-2 text-[#94A3B8] text-xs uppercase tracking-wider font-medium">Status</th>
                   <th className="text-left pb-2 pr-2 text-[#94A3B8] text-xs uppercase tracking-wider font-medium">Notes</th>
-                  <th />
                   <th />
                 </tr>
               </thead>
@@ -365,6 +365,22 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
                           </svg>
                         </button>
                       </td>
+                      <td className="py-1 pr-2 align-middle">
+                        <button
+                          type="button"
+                          onClick={() => toggleExpand(i)}
+                          aria-label={expandedIndex === i ? 'Collapse tasks' : 'Expand tasks'}
+                          className="text-[#94A3B8] hover:text-white transition-colors"
+                        >
+                          <svg
+                            width="20" height="20" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                            className={`transition-transform duration-150 ${expandedIndex === i ? 'rotate-90' : ''}`}
+                          >
+                            <polyline points="9 18 15 12 9 6" />
+                          </svg>
+                        </button>
+                      </td>
                       <td className="py-1 pr-2">
                         <input value={row.details} onChange={e => updateRow(i, 'details', e.target.value)} className={cellInput} placeholder="Milestone details" />
                       </td>
@@ -391,22 +407,6 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
                       </td>
                       <td className="py-1 pr-2">
                         <input value={row.notes} onChange={e => updateRow(i, 'notes', e.target.value)} className={cellInput} placeholder="Notes" />
-                      </td>
-                      <td className="py-1 pr-1 align-middle">
-                        <button
-                          type="button"
-                          onClick={() => toggleExpand(i)}
-                          aria-label={expandedIndex === i ? 'Collapse tasks' : 'Expand tasks'}
-                          className="text-[#94A3B8] hover:text-white transition-colors"
-                        >
-                          <svg
-                            width="16" height="16" viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-                            className={`transition-transform duration-150 ${expandedIndex === i ? 'rotate-90' : ''}`}
-                          >
-                            <polyline points="9 18 15 12 9 6" />
-                          </svg>
-                        </button>
                       </td>
                       <td className="py-1 align-middle">
                         <button type="button" onClick={() => deleteRow(i)} aria-label="Delete milestone" className="text-[#94A3B8] hover:text-[#C8102E] transition-colors">
@@ -522,8 +522,8 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
             {notes.length === 0 && <p className="text-[#94A3B8] text-xs italic">No notes yet.</p>}
             {notes.map(note => (
               <div key={note.id} className="bg-[#0B1929] border border-[#1E3A5F] rounded-lg p-3">
-                <p className="text-white text-xs whitespace-pre-wrap leading-relaxed">{note.text}</p>
-                <p className="text-[#94A3B8] text-[10px] mt-1.5">
+                <p className="text-white text-sm whitespace-pre-wrap leading-relaxed">{note.text}</p>
+                <p className="text-[#94A3B8] text-xs mt-2">
                   {new Date(note.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                 </p>
               </div>
