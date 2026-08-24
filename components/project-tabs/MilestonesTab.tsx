@@ -313,16 +313,16 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
           <div className="overflow-x-auto">
             <table className="w-full" style={{ tableLayout: 'auto', minWidth: 680 }}>
               <colgroup>
-                <col style={{ width: 24 }} />
-                <col style={{ width: 28 }} />
-                {/* details — grows */}
-                <col style={{ width: 144 }} />
-                <col style={{ width: 168 }} />
-                <col style={{ width: 116 }} />
-                <col style={{ width: 116 }} />
-                <col style={{ width: 120 }} />
-                {/* notes — grows */}
-                <col style={{ width: 24 }} />
+                <col style={{ width: 24 }} />   {/* drag */}
+                <col style={{ width: 28 }} />   {/* chevron */}
+                <col />                          {/* details — grows */}
+                <col style={{ width: 148 }} />  {/* owner */}
+                <col style={{ width: 172 }} />  {/* owner email */}
+                <col style={{ width: 120 }} />  {/* projected */}
+                <col style={{ width: 120 }} />  {/* actual */}
+                <col style={{ width: 130 }} />  {/* status */}
+                <col />                          {/* milestone notes — grows */}
+                <col style={{ width: 24 }} />   {/* delete */}
               </colgroup>
               <thead>
                 <tr>
@@ -506,7 +506,7 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
       </div>
 
       {/* Right: Project Notes — fixed height, own scrollbar */}
-      <div className="w-56 shrink-0">
+      <div className="w-80 shrink-0">
         <div className="bg-[#112240] border border-[#1E3A5F] rounded-xl flex flex-col" style={{ height: 500 }}>
           <div className="flex items-center justify-between px-3 py-3 border-b border-[#1E3A5F] shrink-0">
             <span className="text-[#94A3B8] text-xs uppercase tracking-wider font-medium">Project Notes</span>
