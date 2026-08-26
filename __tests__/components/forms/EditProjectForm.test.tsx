@@ -88,3 +88,16 @@ it('passes projectId to tab components', () => {
   fireEvent.click(screen.getByRole('tab', { name: 'Milestones' }))
   expect(screen.getByTestId('milestones-tab')).toBeInTheDocument()
 })
+
+it('renders an Import to BOM Estimator link with the project current values encoded', () => {
+  render(<EditProjectForm project={mockProject} />)
+  const link = screen.getByRole('link', { name: /import to bom estimator/i })
+  const url = new URL(link.getAttribute('href')!)
+
+  expect(url.origin + url.pathname).toBe('https://americloud-das-pricing-calculator.vercel.app/import')
+  expect(url.searchParams.get('client')).toBe('AT&T')
+  expect(url.searchParams.get('project')).toBe('Test Site')
+  expect(url.searchParams.get('jobSiteAddress')).toBe('123 Main St, New York, NY 10001')
+  expect(url.searchParams.get('projectOverview')).toBe('')
+  expect(link).toHaveAttribute('target', '_blank')
+})

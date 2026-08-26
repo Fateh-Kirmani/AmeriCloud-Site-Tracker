@@ -11,6 +11,7 @@ import MilestonesTab from '@/components/project-tabs/MilestonesTab'
 import FilesTab from '@/components/project-tabs/FilesTab'
 import TaskSchedulerTab from '@/components/project-tabs/TaskSchedulerTab'
 import ClientSelect from '@/components/forms/ClientSelect'
+import ImportToBomButton from '@/components/forms/ImportToBomButton'
 import { generateProjectCode } from '@/lib/clients'
 
 const TABS = ['General Information', 'Milestones', 'Task Scheduler', 'Files'] as const
@@ -98,6 +99,12 @@ export default function EditProjectForm({
 
   const isFirstRender = useRef(true)
   const clientValue = watch('client')
+  const siteName = watch('site_name')
+  const street = watch('street')
+  const city = watch('city')
+  const state = watch('state')
+  const zipCode = watch('zip_code')
+  const projectScope = watch('project_scope')
   useEffect(() => {
     if (isFirstRender.current) { isFirstRender.current = false; return }
     setValue('americloud_site_id', clientValue ? generateProjectCode(clientValue) : '')
@@ -275,6 +282,15 @@ export default function EditProjectForm({
               <button type="button" onClick={() => router.push('/')} className="flex-1 border border-[#1E3A5F] text-[#94A3B8] hover:text-white hover:border-white font-semibold py-3.5 rounded-lg transition-colors text-sm uppercase tracking-widest">
                 Cancel
               </button>
+              <ImportToBomButton
+                client={clientValue ?? ''}
+                project={siteName ?? ''}
+                street={street ?? ''}
+                city={city ?? ''}
+                state={state ?? ''}
+                zipCode={zipCode ?? ''}
+                projectOverview={projectScope ?? ''}
+              />
               <button type="submit" disabled={isSubmitting} className="flex-1 bg-[#C8102E] hover:bg-[#A50E25] disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold py-3.5 rounded-lg transition-colors text-sm uppercase tracking-widest shadow-lg">
                 {isSubmitting ? 'Saving...' : 'Save Changes'}
               </button>
