@@ -14,7 +14,7 @@ describe('ImportToBomButton', () => {
 
   it('links to the BOM Estimator /import route with the four fields encoded', () => {
     render(<ImportToBomButton {...props} />)
-    const link = screen.getByRole('link', { name: /import to bom estimator/i })
+    const link = screen.getByRole('link', { name: /import to das estimator/i })
     const url = new URL(link.getAttribute('href')!)
 
     expect(url.origin + url.pathname).toBe('https://americloud-das-pricing-calculator.vercel.app/import')
@@ -26,23 +26,23 @@ describe('ImportToBomButton', () => {
 
   it('opens in a new tab safely', () => {
     render(<ImportToBomButton {...props} />)
-    const link = screen.getByRole('link', { name: /import to bom estimator/i })
+    const link = screen.getByRole('link', { name: /import to das estimator/i })
     expect(link).toHaveAttribute('target', '_blank')
     expect(link).toHaveAttribute('rel', expect.stringContaining('noopener'))
   })
 
   it('omits missing state/zip from the encoded address without crashing', () => {
     render(<ImportToBomButton {...props} state="" zipCode="" />)
-    const link = screen.getByRole('link', { name: /import to bom estimator/i })
+    const link = screen.getByRole('link', { name: /import to das estimator/i })
     const url = new URL(link.getAttribute('href')!)
     expect(url.searchParams.get('jobSiteAddress')).toBe('123 Main St, New York')
   })
 
   it('has an aria-label indicating the link opens in a new tab', () => {
     render(<ImportToBomButton {...props} />)
-    const link = screen.getByRole('link', { name: /import to bom estimator/i })
-    expect(link).toHaveAttribute('aria-label', 'Import to BOM Estimator (opens in a new tab)')
-    expect(link).toHaveTextContent('Import to BOM Estimator')
+    const link = screen.getByRole('link', { name: /import to das estimator/i })
+    expect(link).toHaveAttribute('aria-label', 'Import To DAS Estimator (opens in a new tab)')
+    expect(link).toHaveTextContent('Import To DAS Estimator')
   })
 
   describe('with a custom NEXT_PUBLIC_BOM_ESTIMATOR_URL', () => {
@@ -59,7 +59,7 @@ describe('ImportToBomButton', () => {
     it('strips a trailing slash to avoid a double slash before /import', () => {
       process.env.NEXT_PUBLIC_BOM_ESTIMATOR_URL = 'https://staging.example.com/'
       render(<ImportToBomButton {...props} />)
-      const link = screen.getByRole('link', { name: /import to bom estimator/i })
+      const link = screen.getByRole('link', { name: /import to das estimator/i })
       const url = new URL(link.getAttribute('href')!)
 
       expect(url.origin + url.pathname).toBe('https://staging.example.com/import')
@@ -68,7 +68,7 @@ describe('ImportToBomButton', () => {
     it('is used as-is when it has no trailing slash', () => {
       process.env.NEXT_PUBLIC_BOM_ESTIMATOR_URL = 'https://staging.example.com'
       render(<ImportToBomButton {...props} />)
-      const link = screen.getByRole('link', { name: /import to bom estimator/i })
+      const link = screen.getByRole('link', { name: /import to das estimator/i })
       const url = new URL(link.getAttribute('href')!)
 
       expect(url.origin + url.pathname).toBe('https://staging.example.com/import')

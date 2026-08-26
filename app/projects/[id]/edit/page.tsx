@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { createSupabaseClient } from '@/lib/supabase'
 import EditProjectForm from '@/components/forms/EditProjectForm'
+import ImportToBomButton from '@/components/forms/ImportToBomButton'
 import { Project } from '@/types/project'
 
 export default async function EditProjectPage({
@@ -48,9 +49,20 @@ export default async function EditProjectPage({
 
   return (
     <div className="w-full px-4 sm:px-6 lg:px-10 xl:px-16">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-white">Edit Project</h1>
-        <p className="text-[#94A3B8] mt-1">{project.site_name}</p>
+      <div className="mb-8 flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-white">Edit Project</h1>
+          <p className="text-[#94A3B8] mt-1">{project.site_name}</p>
+        </div>
+        <ImportToBomButton
+          client={project.client}
+          project={project.site_name}
+          street={project.street ?? ''}
+          city={project.city ?? ''}
+          state={project.state ?? ''}
+          zipCode={project.zip_code ?? ''}
+          projectOverview={project.project_scope ?? ''}
+        />
       </div>
       <EditProjectForm project={project} templates={templates} fullTemplates={fullTemplates} />
     </div>

@@ -38,10 +38,10 @@ export default function ImportToBomButton({
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      aria-label="Import to BOM Estimator (opens in a new tab)"
-      className="flex-1 border border-[#1E3A5F] text-[#94A3B8] hover:text-white hover:border-white font-semibold py-3.5 rounded-lg transition-colors text-sm uppercase tracking-widest text-center"
+      aria-label="Import To DAS Estimator (opens in a new tab)"
+      className="inline-flex shrink-0 items-center justify-center border border-[#1E3A5F] text-[#94A3B8] hover:text-white hover:border-white font-semibold py-2 px-4 rounded-lg transition-colors text-sm uppercase tracking-widest"
     >
-      Import to BOM Estimator
+      Import To DAS Estimator
     </a>
   )
 }
