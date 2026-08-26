@@ -69,3 +69,4 @@ Set the following environment variables in your Vercel project settings:
 |---|---|
 | `SUPABASE_URL` | Your Supabase project URL |
 | `SUPABASE_ANON_KEY` | Your Supabase anon/public key |
+| `NEXT_PUBLIC_BOM_ESTIMATOR_URL` | Base URL of the BOM Estimator app the "Import to BOM Estimator" button links to. Optional — defaults to `https://americloud-das-pricing-calculator.vercel.app`. Since this is a `NEXT_PUBLIC_*` variable, it's inlined at build time — changing it in Vercel requires a rebuild, not just a redeploy. |

@@ -37,4 +37,41 @@ describe('ImportToBomButton', () => {
     const url = new URL(link.getAttribute('href')!)
     expect(url.searchParams.get('jobSiteAddress')).toBe('123 Main St, New York')
   })
+
+  it('has an aria-label indicating the link opens in a new tab', () => {
+    render(<ImportToBomButton {...props} />)
+    const link = screen.getByRole('link', { name: /import to bom estimator/i })
+    expect(link).toHaveAttribute('aria-label', 'Import to BOM Estimator (opens in a new tab)')
+    expect(link).toHaveTextContent('Import to BOM Estimator')
+  })
+
+  describe('with a custom NEXT_PUBLIC_BOM_ESTIMATOR_URL', () => {
+    const originalUrl = process.env.NEXT_PUBLIC_BOM_ESTIMATOR_URL
+
+    afterEach(() => {
+      if (originalUrl === undefined) {
+        delete process.env.NEXT_PUBLIC_BOM_ESTIMATOR_URL
+      } else {
+        process.env.NEXT_PUBLIC_BOM_ESTIMATOR_URL = originalUrl
+      }
+    })
+
+    it('strips a trailing slash to avoid a double slash before /import', () => {
+      process.env.NEXT_PUBLIC_BOM_ESTIMATOR_URL = 'https://staging.example.com/'
+      render(<ImportToBomButton {...props} />)
+      const link = screen.getByRole('link', { name: /import to bom estimator/i })
+      const url = new URL(link.getAttribute('href')!)
+
+      expect(url.origin + url.pathname).toBe('https://staging.example.com/import')
+    })
+
+    it('is used as-is when it has no trailing slash', () => {
+      process.env.NEXT_PUBLIC_BOM_ESTIMATOR_URL = 'https://staging.example.com'
+      render(<ImportToBomButton {...props} />)
+      const link = screen.getByRole('link', { name: /import to bom estimator/i })
+      const url = new URL(link.getAttribute('href')!)
+
+      expect(url.origin + url.pathname).toBe('https://staging.example.com/import')
+    })
+  })
 })

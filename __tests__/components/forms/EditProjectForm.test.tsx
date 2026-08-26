@@ -100,4 +100,5 @@ it('renders an Import to BOM Estimator link with the project current values enco
   expect(url.searchParams.get('jobSiteAddress')).toBe('123 Main St, New York, NY 10001')
   expect(url.searchParams.get('projectOverview')).toBe('')
   expect(link).toHaveAttribute('target', '_blank')
+  expect(link).toHaveAttribute('aria-label', 'Import to BOM Estimator (opens in a new tab)')
 })
