@@ -41,6 +41,7 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
   const [showAddNote, setShowAddNote] = useState(false)
   const [newNoteText, setNewNoteText] = useState('')
   const [savingNote, setSavingNote] = useState(false)
+  const [deletingNote, setDeletingNote] = useState<string | null>(null)
 
   // Template modal
   const [showTemplateModal, setShowTemplateModal] = useState(false)
@@ -269,6 +270,19 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
       alert('Failed to save note. Please try again.')
     } finally {
       setSavingNote(false)
+    }
+  }
+
+  async function deleteNote(noteId: string) {
+    setDeletingNote(noteId)
+    try {
+      const res = await fetch(`/api/projects/${projectId}/notes/${noteId}`, { method: 'DELETE' })
+      if (!res.ok) throw new Error()
+      setNotes(n => n.filter(x => x.id !== noteId))
+    } catch {
+      alert('Failed to delete note. Please try again.')
+    } finally {
+      setDeletingNote(null)
     }
   }
 
@@ -523,9 +537,20 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
             {notes.map(note => (
               <div key={note.id} className="bg-[#0B1929] border border-[#1E3A5F] rounded-lg p-3">
                 <p className="text-white text-sm whitespace-pre-wrap break-words leading-relaxed">{note.text}</p>
-                <p className="text-[#94A3B8] text-xs mt-2">
-                  {new Date(note.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                </p>
+                <div className="flex items-center justify-between mt-2">
+                  <p className="text-[#94A3B8] text-xs">
+                    {new Date(note.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => deleteNote(note.id)}
+                    disabled={deletingNote === note.id}
+                    aria-label="Delete note"
+                    className="text-[#94A3B8] hover:text-[#C8102E] disabled:opacity-40 transition-colors shrink-0"
+                  >
+                    <TrashIcon />
+                  </button>
+                </div>
               </div>
             ))}
           </div>

@@ -10,10 +10,11 @@ import Toast from '@/components/Toast'
 import MilestonesTab from '@/components/project-tabs/MilestonesTab'
 import FilesTab from '@/components/project-tabs/FilesTab'
 import TaskSchedulerTab from '@/components/project-tabs/TaskSchedulerTab'
+import FinanceTab from '@/components/project-tabs/FinanceTab'
 import ClientSelect from '@/components/forms/ClientSelect'
 import { generateProjectCode } from '@/lib/clients'
 
-const TABS = ['General Information', 'Milestones', 'Task Scheduler', 'Files'] as const
+const TABS = ['General Information', 'Milestones', 'Task Scheduler', 'Files', 'Finance'] as const
 type Tab = (typeof TABS)[number]
 
 const AMERICLOUD_PMS = ['John Smith', 'Sarah Johnson', 'Mike Davis']
@@ -305,6 +306,13 @@ export default function EditProjectForm({
       {activeTab === 'Files' && (
         <div role="tabpanel" id="tabpanel-files" aria-labelledby="tab-files">
           <FilesTab projectId={project.id} />
+        </div>
+      )}
+
+      {/* Finance tab */}
+      {activeTab === 'Finance' && (
+        <div role="tabpanel" id="tabpanel-finance" aria-labelledby="tab-finance">
+          <FinanceTab projectId={project.id} />
         </div>
       )}
     </>

@@ -98,3 +98,14 @@ export type MilestoneTemplate = {
   name: string
   items: MilestoneTemplateItem[]
 }
+
+export type FinanceFile = {
+  id: string
+  project_id: string
+  file_name: string
+  file_type: string | null
+  storage_path: string
+  notes: string | null
+  created_at: string
+  url: string | null
+}
