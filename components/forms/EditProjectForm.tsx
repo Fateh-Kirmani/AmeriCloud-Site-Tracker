@@ -17,8 +17,6 @@ import { generateProjectCode } from '@/lib/clients'
 const TABS = ['General Information', 'Milestones', 'Task Scheduler', 'Files', 'Finance'] as const
 type Tab = (typeof TABS)[number]
 
-const AMERICLOUD_PMS = ['John Smith', 'Sarah Johnson', 'Mike Davis']
-const AMERICLOUD_RFS = ['Robert Chen', 'Lisa Park', 'David Wilson']
 
 function inputClass(hasError: boolean) {
   return `w-full bg-[#0B1929] border ${
@@ -90,6 +88,8 @@ export default function EditProjectForm({
       rf_engineer_email: project.rf_engineer_email ?? '',
       rf_engineer_phone: project.rf_engineer_phone ?? '',
       americloud_pm: project.americloud_pm ?? '',
+      americloud_pm_email: project.americloud_pm_email ?? '',
+      americloud_pm_phone: project.americloud_pm_phone ?? '',
       americloud_rf: project.americloud_rf ?? '',
       project_scope: project.project_scope ?? '',
       project_template: project.project_template ?? '',
@@ -172,7 +172,7 @@ export default function EditProjectForm({
                     <input {...register('city')} className={inputClass(!!errors.city)} placeholder="New York" />
                   </Field>
                   <div className="grid grid-cols-2 gap-4">
-                    <Field label="State" error={errors.state?.message}>
+                    <Field label="State" required error={errors.state?.message}>
                       <input {...register('state')} className={inputClass(!!errors.state)} placeholder="NY" />
                     </Field>
                     <Field label="ZIP Code" error={errors.zip_code?.message}>
@@ -213,22 +213,12 @@ export default function EditProjectForm({
 
             {/* Row 2 */}
             <FormCard title="Client Contact">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div>
-                  <h3 className="text-white font-semibold text-sm mb-3">PM Information</h3>
-                  <div className="border-t border-[#1E3A5F] pt-4 space-y-4">
-                    <Field label="Name"><input {...register('pm_name')} className={inputClass(false)} placeholder="PM full name" /></Field>
-                    <Field label="Email" error={errors.pm_email?.message}><input {...register('pm_email')} type="email" className={inputClass(!!errors.pm_email)} placeholder="pm@client.com" /></Field>
-                    <Field label="Phone"><input {...register('pm_phone')} type="tel" className={inputClass(false)} placeholder="(555) 000-0000" /></Field>
-                  </div>
-                </div>
-                <div>
-                  <h3 className="text-white font-semibold text-sm mb-3">RF Engineer Information</h3>
-                  <div className="border-t border-[#1E3A5F] pt-4 space-y-4">
-                    <Field label="Name"><input {...register('rf_engineer_name')} className={inputClass(false)} placeholder="RF Engineer full name" /></Field>
-                    <Field label="Email" error={errors.rf_engineer_email?.message}><input {...register('rf_engineer_email')} type="email" className={inputClass(!!errors.rf_engineer_email)} placeholder="rf@client.com" /></Field>
-                    <Field label="Phone"><input {...register('rf_engineer_phone')} type="tel" className={inputClass(false)} placeholder="(555) 000-0000" /></Field>
-                  </div>
+              <div>
+                <h3 className="text-white font-semibold text-sm mb-3">PM Information</h3>
+                <div className="border-t border-[#1E3A5F] pt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <Field label="Name"><input {...register('pm_name')} className={inputClass(false)} placeholder="PM full name" /></Field>
+                  <Field label="Email" error={errors.pm_email?.message}><input {...register('pm_email')} type="email" className={inputClass(!!errors.pm_email)} placeholder="pm@client.com" /></Field>
+                  <Field label="Phone"><input {...register('pm_phone')} type="tel" className={inputClass(false)} placeholder="(555) 000-0000" /></Field>
                 </div>
               </div>
             </FormCard>
@@ -236,19 +226,13 @@ export default function EditProjectForm({
             {/* Row 3 */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <FormCard title="AmeriCloud Team">
-                <div className="space-y-4">
-                  <Field label="AmeriCloud PM">
-                    <select {...register('americloud_pm')} className={inputClass(false)}>
-                      <option value="">Select PM...</option>
-                      {AMERICLOUD_PMS.map((p) => <option key={p} value={p}>{p}</option>)}
-                    </select>
-                  </Field>
-                  <Field label="AmeriCloud RF Engineer">
-                    <select {...register('americloud_rf')} className={inputClass(false)}>
-                      <option value="">Select RF Engineer...</option>
-                      {AMERICLOUD_RFS.map((r) => <option key={r} value={r}>{r}</option>)}
-                    </select>
-                  </Field>
+                <div>
+                  <h3 className="text-white font-semibold text-sm mb-3">PM Information</h3>
+                  <div className="border-t border-[#1E3A5F] pt-4 space-y-4">
+                    <Field label="Name"><input {...register('americloud_pm')} className={inputClass(false)} placeholder="PM full name" /></Field>
+                    <Field label="Email" error={errors.americloud_pm_email?.message}><input {...register('americloud_pm_email')} type="email" className={inputClass(!!errors.americloud_pm_email)} placeholder="pm@americloudtelecom.com" /></Field>
+                    <Field label="Phone"><input {...register('americloud_pm_phone')} type="tel" className={inputClass(false)} placeholder="(555) 000-0000" /></Field>
+                  </div>
                 </div>
               </FormCard>
               <FormCard title="Project Details">
@@ -264,8 +248,8 @@ export default function EditProjectForm({
                       {templates.map((t) => <option key={t.id} value={t.name}>{t.name}</option>)}
                     </select>
                   </Field>
-                  <Field label="Project Scope">
-                    <textarea {...register('project_scope')} className={`${inputClass(false)} resize-none`} rows={4} placeholder="Describe the project scope..." />
+                  <Field label="Project Scope" required error={errors.project_scope?.message}>
+                    <textarea {...register('project_scope')} className={`${inputClass(!!errors.project_scope)} resize-none`} rows={4} placeholder="Describe the project scope..." />
                   </Field>
                 </div>
               </FormCard>

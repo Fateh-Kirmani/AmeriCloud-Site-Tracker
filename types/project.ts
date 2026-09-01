@@ -12,7 +12,7 @@ export const projectSchema = z.object({
   address: z.string().optional(),
   street: z.string().trim().min(1, 'Street is required'),
   city: z.string().trim().min(1, 'City is required'),
-  state: z.string().optional(),
+  state: z.string().trim().min(1, 'State is required'),
   zip_code: z.string().optional(),
   americloud_site_id: z.string().optional(),
   client: z.string().trim().min(1, 'Client is required'),
@@ -24,8 +24,10 @@ export const projectSchema = z.object({
   rf_engineer_email: optionalEmail,
   rf_engineer_phone: z.string().optional(),
   americloud_pm: z.string().optional(),
+  americloud_pm_email: optionalEmail,
+  americloud_pm_phone: z.string().optional(),
   americloud_rf: z.string().optional(),
-  project_scope: z.string().optional(),
+  project_scope: z.string().trim().min(1, 'Project scope is required'),
   project_template: z.string().optional(),
   status: z.enum(STATUS_VALUES),
 })
@@ -51,6 +53,8 @@ export type Project = {
   rf_engineer_email: string | null
   rf_engineer_phone: string | null
   americloud_pm: string | null
+  americloud_pm_email: string | null
+  americloud_pm_phone: string | null
   americloud_rf: string | null
   project_scope: string | null
   project_template: string | null
