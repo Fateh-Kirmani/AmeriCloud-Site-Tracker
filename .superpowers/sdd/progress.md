@@ -1,1 +1,38 @@
 
+Task 1: complete (commits ab914f8..71bd2c5, review clean)
+--- SPRINT 2 ---
+Sprint 2 Task 1: complete (commits 56e9b61..dc8ea06, review clean. Minor: redundant inner beforeEach; no test for sort-column injection guard fallback)
+Sprint 2 Task 2: complete (commits dc8ea06..64622a2, review clean. Minor: mockUpdate default factory exposes wrong chain; DELETE 404 path spec inconsistency — global constraints win, no 404 on delete)
+Sprint 2 Task 3: complete (commits 64622a2..610017a, review clean)
+Sprint 2 Task 4: complete (commits 610017a..595cb3d, review clean after fix. Fixed: stale closure in debounce via paired refs; selectClass→const; double toString; unused import; React.MutableRefObject→MutableRefObject)
+Sprint 2 Task 5: complete (commits 595cb3d..996a9eb, review clean. Important (cross-task): handleSort creates fresh URLSearchParams losing filter params — must be fixed in Task 6 by reading existing params from URL. Minor: router mock missing refresh; no test for delete button opening modal; delete success test doesn't assert call order)
+Sprint 2 Task 6: complete (commits 996a9eb..4658abb, review clean after fix. Fixed: added console.error to catch block. Minor: test URL cleanup fragile; `to` date filter excludes same-day records — known design gap from FilterPanel)
+Sprint 2 Task 7: complete (commits 4658abb..e6b1561, review clean. Minor: Field label not associated with inputs (inherited from NewProjectForm); isSubmitting resets before redirect delay; setTimeout handle not captured — all inherited patterns)
+Sprint 2 Final fix: complete (commit fd821df — multi-column search via .or(), PUT 404 via maybeSingle, table column order corrected)
+Sprint 2 Final whole-branch review: APPROVED — Ready to merge
+--- SPRINT 3 ---
+Sprint 3 Task 1: complete (commits 295c61c..af3e05e, review clean. Minor: React.ReactNode without named import — works, not a defect per spec)
+Sprint 3 Task 2: complete (commits af3e05e..07d63e1, review clean after fix. Fixed: restored aria-hidden on SVG icons via data-testid backdrop selector)
+Sprint 3 Task 3: complete (commits 07d63e1..7e40089, review clean. Minor: button missing type="button" — no functional impact, will triage in final review)
+Sprint 3 Task 4: complete (commits 7e40089..4a29a7f, review clean)
+Sprint 3 Final fix: complete (commit 103c940 — inert+aria-hidden on closed nav, z-index layering, type=button on buttons)
+Sprint 3 Final whole-branch review: APPROVED — Ready to merge. Minor deferred: sidebar missing title text (plan deviation), closeSidebar not useCallback (churn only), New Project uses exact match (no sub-routes in Sprint 3)
+Task 2: complete (commits 71bd2c5..c9386a1, review clean)
+Task 3: complete (commits c9386a1..3e6cb9f, review clean)
+Task 4: complete (commits 3e6cb9f..c1e7d1e, review clean)
+Task 5: complete (commits c1e7d1e..9965031, review clean)
+Task 6: complete (commits 9965031..7d5b275, review clean)
+Task 7: complete (commits 7d5b275..6f1dc7d, review clean. Minor: Field component missing htmlFor/id association on inputs — not spec violation, accessibility follow-up)
+Task 8: complete (commits 6f1dc7d..e559996, review clean)
+Final fix: complete (commits e559996..27d3210, review clean — all 4 correctness bugs resolved)
+Final whole-branch review: APPROVED — Ready to merge
+Sprint 4 Task 1: complete (commits 1faf19f..40d2c5f, review clean)
+Sprint 4 Task 2: complete (commits 40d2c5f..f94bf43, review clean. Note: 6 tests not 5 — extra GET error case)
+Sprint 4 Task 3: complete (commits f94bf43..5c74f52, review clean after fix. Fixed: GET milestonesResult.error not checked — added error check + test)
+Sprint 4 Task 4: complete (commits 5c74f52..92e915a, review clean)
+Sprint 4 Task 5: complete (commits 92e915a..d2f2505, review clean)
+Sprint 4 Task 6: complete (commits d2f2505..3e564fa, review clean. Minor: delete failure silent — intentional per spec)
+Sprint 4 Task 7: complete (commits 3e564fa..a7c5a04, review clean. Minor: Field component missing htmlFor/id — inherited pattern from existing forms)
+Sprint 4 Task 8: complete (commits a7c5a04..d46935a, review clean. Minor: tabpanel aria-labelledby points to non-existent ids; unused waitFor import; weak projectId test assertion)
+Sprint 4 Final fix: complete (commit 112eae6 — project_id scoped deletes, FilesTab ok-checks, tab button ids)
+Sprint 4 Final whole-branch review: APPROVED — Ready to merge. Minor deferred: key={i} in row maps (MilestonesTab/TeamTab), POST /files returns 201 on update, FilesTab delete failure shows no error message, waitFor unused import, overstated test name

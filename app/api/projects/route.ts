@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth'
 import { createSupabaseClient } from '@/lib/supabase'
 import { projectSchema } from '@/types/project'
+import { authOptions } from '@/lib/auth'
 
 export async function POST(request: NextRequest) {
+  const session = await getServerSession(authOptions)
   let body: unknown
   try {
     body = await request.json()
@@ -24,6 +27,7 @@ export async function POST(request: NextRequest) {
     const insertData = {
       ...cleanedData,
       address: parsed.data.address || parsed.data.street || '',
+      created_by: session?.user?.email ?? null,
     }
 
     const supabase = createSupabaseClient()
