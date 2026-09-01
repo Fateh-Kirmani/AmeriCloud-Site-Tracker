@@ -20,6 +20,8 @@ export type ProjectNote = {
   id: string
   text: string
   created_at: string
+  author_name: string | null
+  author_email: string | null
 }
 
 export type MilestoneRow = {

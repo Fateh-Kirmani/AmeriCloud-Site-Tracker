@@ -1,8 +1,17 @@
 'use client'
 import { Fragment, useState, useEffect, useRef } from 'react'
+import { useSession } from 'next-auth/react'
 import TrashIcon from '@/components/icons/TrashIcon'
 import { MilestoneRow, MilestoneTask, ProjectNote } from '@/types/milestone'
 import { MANAGERS } from '@/lib/managers'
+
+function PencilIcon() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+      <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+    </svg>
+  )
+}
 
 const cellInput = 'w-full bg-[#0B1929] border border-[#1E3A5F] rounded-md px-2 py-2 text-white text-sm placeholder-[#8899AA] focus:outline-none focus:ring-2 focus:ring-[#C8102E] focus:border-transparent transition-colors'
 const cellReadonly = 'w-full bg-[#0D1F35] border border-[#1E3A5F] rounded-md px-2 py-2 text-[#94A3B8] text-sm cursor-not-allowed'
@@ -22,6 +31,7 @@ function getProjectedDateStyle(projected: string, actualized: string): React.CSS
 }
 
 export default function MilestonesTab({ projectId, projectTemplate, templates }: Props) {
+  const { data: session } = useSession()
   const [rows, setRows] = useState<MilestoneRow[]>([])
   const [deletedIds, setDeletedIds] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
@@ -42,6 +52,9 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
   const [newNoteText, setNewNoteText] = useState('')
   const [savingNote, setSavingNote] = useState(false)
   const [deletingNote, setDeletingNote] = useState<string | null>(null)
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null)
+  const [editNoteText, setEditNoteText] = useState('')
+  const [savingEdit, setSavingEdit] = useState(false)
 
   // Template modal
   const [showTemplateModal, setShowTemplateModal] = useState(false)
@@ -283,6 +296,36 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
       alert('Failed to delete note. Please try again.')
     } finally {
       setDeletingNote(null)
+    }
+  }
+
+  function startEdit(note: ProjectNote) {
+    setEditingNoteId(note.id)
+    setEditNoteText(note.text)
+  }
+
+  function cancelEdit() {
+    setEditingNoteId(null)
+    setEditNoteText('')
+  }
+
+  async function saveEdit(noteId: string) {
+    if (!editNoteText.trim()) return
+    setSavingEdit(true)
+    try {
+      const res = await fetch(`/api/projects/${projectId}/notes/${noteId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: editNoteText }),
+      })
+      if (!res.ok) throw new Error()
+      const updated: ProjectNote = await res.json()
+      setNotes(n => n.map(x => x.id === noteId ? updated : x))
+      cancelEdit()
+    } catch {
+      alert('Failed to save changes. Please try again.')
+    } finally {
+      setSavingEdit(false)
     }
   }
 
@@ -532,27 +575,72 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
               + Add
             </button>
           </div>
-          <div className="flex-1 overflow-y-auto overflow-x-hidden p-3 space-y-2">
-            {notes.length === 0 && <p className="text-[#94A3B8] text-xs italic">No notes yet.</p>}
-            {notes.map(note => (
-              <div key={note.id} className="bg-[#0B1929] border border-[#1E3A5F] rounded-lg p-3">
-                <p className="text-white text-sm whitespace-pre-wrap break-words leading-relaxed">{note.text}</p>
-                <div className="flex items-center justify-between mt-2">
-                  <p className="text-[#94A3B8] text-xs">
-                    {new Date(note.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => deleteNote(note.id)}
-                    disabled={deletingNote === note.id}
-                    aria-label="Delete note"
-                    className="text-[#94A3B8] hover:text-[#C8102E] disabled:opacity-40 transition-colors shrink-0"
-                  >
-                    <TrashIcon />
-                  </button>
+          <div className="flex-1 overflow-y-auto overflow-x-hidden">
+            {notes.length === 0 && <p className="text-[#94A3B8] text-xs italic p-3">No notes yet.</p>}
+            {notes.map((note, idx) => {
+              const isOwner = !!session?.user?.email && note.author_email === session.user.email
+              const authorLabel = note.author_name ?? note.author_email?.split('@')[0] ?? null
+              return (
+                <div key={note.id}>
+                  {idx > 0 && <div className="border-t border-[#1E3A5F]" />}
+                  <div className="p-3">
+                    {editingNoteId === note.id ? (
+                      <>
+                        <textarea
+                          value={editNoteText}
+                          onChange={e => setEditNoteText(e.target.value)}
+                          className={`${modalInput} resize-none`}
+                          rows={4}
+                          autoFocus
+                        />
+                        <div className="flex gap-3 mt-2">
+                          <button type="button" onClick={cancelEdit} className="text-xs text-[#94A3B8] hover:text-white transition-colors">
+                            Cancel
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => saveEdit(note.id)}
+                            disabled={savingEdit || !editNoteText.trim()}
+                            className="text-xs text-[#C8102E] hover:text-[#A50E25] font-medium transition-colors disabled:opacity-40"
+                          >
+                            {savingEdit ? 'Saving...' : 'Save'}
+                          </button>
+                        </div>
+                      </>
+                    ) : (
+                      <p className="text-white text-sm whitespace-pre-wrap break-words leading-relaxed">{note.text}</p>
+                    )}
+                    <div className="flex items-center justify-between mt-2">
+                      <p className="text-[#94A3B8] text-xs">
+                        {authorLabel && <span>{authorLabel} · </span>}
+                        {new Date(note.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      </p>
+                      {isOwner && editingNoteId !== note.id && (
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => startEdit(note)}
+                            aria-label="Edit note"
+                            className="text-[#94A3B8] hover:text-white transition-colors"
+                          >
+                            <PencilIcon />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => deleteNote(note.id)}
+                            disabled={deletingNote === note.id}
+                            aria-label="Delete note"
+                            className="text-[#94A3B8] hover:text-[#C8102E] disabled:opacity-40 transition-colors"
+                          >
+                            <TrashIcon />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </div>
       </div>

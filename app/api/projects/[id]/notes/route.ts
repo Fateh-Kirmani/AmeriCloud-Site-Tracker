@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth'
 import { createSupabaseClient } from '@/lib/supabase'
+import { authOptions } from '@/lib/auth'
 
 export async function GET(
   _request: NextRequest,
@@ -10,7 +12,7 @@ export async function GET(
     const supabase = createSupabaseClient()
     const { data, error } = await supabase
       .from('project_notes')
-      .select('id, text, created_at')
+      .select('id, text, created_at, author_name, author_email')
       .eq('project_id', id)
       .order('created_at', { ascending: false })
     if (error) return NextResponse.json({ error: 'Database error' }, { status: 500 })
@@ -24,6 +26,7 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const session = await getServerSession(authOptions)
   const { id } = await params
   let body: unknown
   try { body = await request.json() } catch {
@@ -37,8 +40,13 @@ export async function POST(
     const supabase = createSupabaseClient()
     const { data, error } = await supabase
       .from('project_notes')
-      .insert({ project_id: id, text: text.trim() })
-      .select('id, text, created_at')
+      .insert({
+        project_id: id,
+        text: text.trim(),
+        author_name: session?.user?.name ?? null,
+        author_email: session?.user?.email ?? null,
+      })
+      .select('id, text, created_at, author_name, author_email')
       .single()
     if (error) return NextResponse.json({ error: 'Database error' }, { status: 500 })
     return NextResponse.json(data, { status: 201 })
