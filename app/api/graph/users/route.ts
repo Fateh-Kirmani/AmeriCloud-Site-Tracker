@@ -10,10 +10,10 @@ export async function GET(request: NextRequest) {
   if (q.length < 2) return NextResponse.json([])
 
   try {
-    const search = encodeURIComponent(q)
+    const searchVal = `"displayName:${q}" OR "userPrincipalName:${q}"`
     const url =
       `https://graph.microsoft.com/v1.0/users` +
-      `?$search="displayName:${search}" OR "userPrincipalName:${search}"` +
+      `?$search=${encodeURIComponent(searchVal)}` +
       `&$select=displayName,mail,userPrincipalName` +
       `&$top=10&$count=true`
 
