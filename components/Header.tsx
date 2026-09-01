@@ -1,9 +1,11 @@
 'use client'
 import Image from 'next/image'
 import { useSidebar } from '@/components/SidebarProvider'
+import { useSession, signOut } from 'next-auth/react'
 
 export default function Header() {
   const { sidebarOpen, toggleSidebar } = useSidebar()
+  const { data: session } = useSession()
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-[#0B1929] border-b border-[#1E3A5F] shadow-lg">
@@ -40,6 +42,21 @@ export default function Header() {
         <span className="text-white font-semibold text-lg tracking-wide">
           AmeriCloud Project Tracker
         </span>
+
+        {session?.user && (
+          <div className="ml-auto flex items-center gap-3">
+            <span className="text-[#94A3B8] text-sm hidden sm:block truncate max-w-[200px]">
+              {session.user.name ?? session.user.email}
+            </span>
+            <button
+              type="button"
+              onClick={() => signOut({ callbackUrl: '/login' })}
+              className="text-[#94A3B8] hover:text-white text-xs font-medium transition-colors border border-[#1E3A5F] hover:border-white px-3 py-1.5 rounded-lg shrink-0"
+            >
+              Sign out
+            </button>
+          </div>
+        )}
       </div>
     </header>
   )
