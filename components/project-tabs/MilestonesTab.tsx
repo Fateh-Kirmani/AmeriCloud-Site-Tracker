@@ -26,7 +26,7 @@ type Props = {
 function getProjectedDateStyle(projected: string, actualized: string): React.CSSProperties {
   if (!projected) return {}
   const today = new Date().toISOString().split('T')[0]
-  if (actualized) return actualized <= projected ? { color: '#4ade80' } : {}
+  if (actualized) return actualized <= projected ? { color: '#4ade80' } : { color: '#f87171' }
   return projected < today ? { color: '#f87171' } : {}
 }
 
@@ -551,6 +551,7 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
                                           value={t.projected_date ?? ''}
                                           onChange={e => setEditingTasks(prev => ({ ...prev, [i]: (prev[i] ?? []).map((x, xi) => xi === ti ? { ...x, projected_date: e.target.value } : x) }))}
                                           className={modalInput}
+                                          style={getProjectedDateStyle(t.projected_date ?? '', t.actual_date ?? '')}
                                         />
                                         <input
                                           type="date"
