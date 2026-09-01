@@ -28,10 +28,10 @@ export async function GET(
     if (error) return NextResponse.json({ error: 'Database error' }, { status: 500 })
 
     // Group by milestone_id
-    const grouped: Record<string, { id: string; task: string; sort_order: number }[]> = {}
+    const grouped: Record<string, { id: string; task: string; sort_order: number; projected_date: string | null; actual_date: string | null; status: string | null; notes: string | null }[]> = {}
     for (const t of tasks ?? []) {
       if (!grouped[t.milestone_id]) grouped[t.milestone_id] = []
-      grouped[t.milestone_id].push({ id: t.id, task: t.task, sort_order: t.sort_order })
+      grouped[t.milestone_id].push({ id: t.id, task: t.task, sort_order: t.sort_order, projected_date: t.projected_date ?? null, actual_date: t.actual_date ?? null, status: t.status ?? null, notes: t.notes ?? null })
     }
     return NextResponse.json(grouped)
   } catch {
@@ -61,9 +61,17 @@ export async function PUT(
 
     // Insert new tasks
     if (tasks.length > 0) {
-      const rows = (tasks as { task?: string }[])
+      const rows = (tasks as { task?: string; projected_date?: string | null; actual_date?: string | null; status?: string | null; notes?: string | null }[])
         .filter(t => t.task?.trim())
-        .map((t, i) => ({ milestone_id, task: (t.task as string).trim(), sort_order: i }))
+        .map((t, i) => ({
+          milestone_id,
+          task: (t.task as string).trim(),
+          sort_order: i,
+          projected_date: t.projected_date || null,
+          actual_date: t.actual_date || null,
+          status: t.status || null,
+          notes: t.notes || null,
+        }))
       if (rows.length > 0) {
         const { error } = await supabase.from('milestone_tasks').insert(rows)
         if (error) return NextResponse.json({ error: 'Database error' }, { status: 500 })

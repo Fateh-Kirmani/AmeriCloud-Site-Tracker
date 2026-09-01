@@ -58,6 +58,7 @@ export async function POST(
     const file = formData.get('file') as File | null
     const fileType = formData.get('file_type') as string | null
     const notes = formData.get('notes') as string | null
+    const status = formData.get('status') as string | null
 
     if (!file) return NextResponse.json({ error: 'No file provided' }, { status: 400 })
 
@@ -84,7 +85,7 @@ export async function POST(
     if (existing) {
       const { data, error } = await supabase
         .from('finance_files')
-        .update({ file_type: fileType || null, notes: notes || null })
+        .update({ file_type: fileType || null, notes: notes || null, status: status || null })
         .eq('id', existing.id)
         .select()
         .single()
@@ -99,6 +100,7 @@ export async function POST(
           file_type: fileType || null,
           storage_path: storagePath,
           notes: notes || null,
+          status: status || null,
         })
         .select()
         .single()

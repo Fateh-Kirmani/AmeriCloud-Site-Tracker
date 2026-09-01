@@ -51,8 +51,10 @@ export default async function EditProjectPage({
     <div className="w-full px-4 sm:px-6 lg:px-10 xl:px-16">
       <div className="mb-8 flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-white">Edit Project</h1>
-          <p className="text-[#94A3B8] mt-1">{project.site_name}</p>
+          <h1 className="text-3xl font-bold text-white">{project.site_name}</h1>
+          <p className="text-[#94A3B8] mt-1">
+            {[project.street, project.city, project.state, project.zip_code].filter(Boolean).join(', ')}
+          </p>
         </div>
         <ImportToBomButton
           client={project.client}

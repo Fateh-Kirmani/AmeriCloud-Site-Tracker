@@ -10,7 +10,7 @@ export async function PATCH(
   try { body = await request.json() } catch {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
   }
-  const { notes } = body as { notes: unknown }
+  const { notes, status } = body as { notes: unknown; status: unknown }
   try {
     const supabase = createSupabaseClient()
     const { data: file } = await supabase
@@ -22,7 +22,10 @@ export async function PATCH(
     if (!file) return NextResponse.json({ error: 'File not found' }, { status: 404 })
     const { error } = await supabase
       .from('finance_files')
-      .update({ notes: typeof notes === 'string' ? notes || null : null })
+      .update({
+        notes: typeof notes === 'string' ? notes || null : null,
+        status: typeof status === 'string' ? status || null : undefined,
+      })
       .eq('id', fileId)
     if (error) return NextResponse.json({ error: 'Database error' }, { status: 500 })
     return NextResponse.json({ success: true })

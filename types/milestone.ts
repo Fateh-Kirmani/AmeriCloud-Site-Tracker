@@ -14,6 +14,10 @@ export type MilestoneTask = {
   id?: string
   task: string
   sort_order?: number
+  projected_date?: string | null
+  actual_date?: string | null
+  status?: string | null
+  notes?: string | null
 }
 
 export type ProjectNote = {
@@ -108,6 +112,7 @@ export type FinanceFile = {
   file_type: string | null
   storage_path: string
   notes: string | null
+  status: string | null
   created_at: string
   url: string | null
 }

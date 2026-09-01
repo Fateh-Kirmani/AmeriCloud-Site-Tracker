@@ -41,10 +41,13 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
   const [showUndo, setShowUndo] = useState(false)
   const [dragIndex, setDragIndex] = useState<number | null>(null)
 
-  // Inline task expansion
-  const [expandedIndex, setExpandedIndex] = useState<number | null>(null)
-  const [editingTasks, setEditingTasks] = useState<MilestoneTask[]>([])
-  const [savingTasks, setSavingTasks] = useState(false)
+  // Inline task expansion — all expanded by default
+  const [expandedIndices, setExpandedIndices] = useState<Set<number>>(new Set())
+  const [editingTasks, setEditingTasks] = useState<Record<number, MilestoneTask[]>>({})
+  const [savingTasks, setSavingTasks] = useState<Set<number>>(new Set())
+  // Notes popup modal (milestone notes or task notes)
+  const [notesModal, setNotesModal] = useState<{ kind: 'milestone'; rowIndex: number } | { kind: 'task'; rowIndex: number; taskIndex: number } | null>(null)
+  const [notesModalText, setNotesModalText] = useState('')
 
   // Notes
   const [notes, setNotes] = useState<ProjectNote[]>([])
@@ -97,6 +100,10 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
                 tasks: (item.tasks ?? []).map(t => ({ task: t.task })),
               }))
             setRows(preFilled)
+            setExpandedIndices(new Set(preFilled.map((_, i) => i)))
+            setEditingTasks(Object.fromEntries(
+              preFilled.map((row, i) => [i, row.tasks.length > 0 ? row.tasks.map((t: MilestoneTask) => ({ ...t })) : [{ task: '' }]])
+            ))
             try {
               const res = await fetch(`/api/projects/${projectId}/milestones`, {
                 method: 'PUT',
@@ -119,19 +126,24 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
                 }
                 const reloadRes = await fetch(`/api/projects/${projectId}/milestones`)
                 const reloaded = await reloadRes.json()
-                setRows((reloaded.milestones ?? []).map((m: typeof milestones[0]) => ({
+                const reloadedRows = (reloaded.milestones ?? []).map((m: typeof milestones[0]) => ({
                   id: m.id, details: m.details ?? '', owner: m.owner ?? '',
                   owner_email: MANAGERS.find(mg => mg.name === (m.owner ?? ''))?.email ?? '',
                   projected_date: m.projected_date ?? '', actualized_date: m.actualized_date ?? '',
                   notes: m.notes ?? '', status: m.status ?? 'Active', tasks: m.tasks ?? [],
-                })))
+                }))
+                setRows(reloadedRows)
+                setExpandedIndices(new Set(reloadedRows.map((_: unknown, i: number) => i)))
+                setEditingTasks(Object.fromEntries(
+                  reloadedRows.map((row: MilestoneRow, i: number) => [i, row.tasks.length > 0 ? row.tasks.map((t: MilestoneTask) => ({ ...t })) : [{ task: '' }]])
+                ))
               }
             } catch {}
             return
           }
         }
 
-        setRows(milestones.map(m => ({
+        const loadedRows = milestones.map(m => ({
           id: m.id,
           details: m.details ?? '',
           owner: m.owner ?? '',
@@ -141,7 +153,12 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
           notes: m.notes ?? '',
           status: m.status ?? 'Active',
           tasks: m.tasks ?? [],
-        })))
+        }))
+        setRows(loadedRows)
+        setExpandedIndices(new Set(loadedRows.map((_, i) => i)))
+        setEditingTasks(Object.fromEntries(
+          loadedRows.map((row, i) => [i, row.tasks.length > 0 ? row.tasks.map(t => ({ ...t })) : [{ task: '' }]])
+        ))
       } catch {
         setFetchError(true)
       } finally {
@@ -152,7 +169,10 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
   }, [projectId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function addRow() {
+    const newIndex = rows.length
     setRows(r => [...r, { details: '', owner: '', owner_email: '', projected_date: '', actualized_date: '', notes: '', status: 'Active', tasks: [] }])
+    setExpandedIndices(prev => new Set([...prev, newIndex]))
+    setEditingTasks(prev => ({ ...prev, [newIndex]: [{ task: '' }] }))
   }
 
   function updateRow(index: number, field: keyof MilestoneRow, value: string) {
@@ -166,8 +186,20 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
 
   function deleteRow(index: number) {
     const row = rows[index]
-    if (expandedIndex === index) { setExpandedIndex(null); setEditingTasks([]) }
-    else if (expandedIndex !== null && expandedIndex > index) setExpandedIndex(expandedIndex - 1)
+    setExpandedIndices(prev => {
+      const next = new Set<number>()
+      prev.forEach(i => { if (i < index) next.add(i); else if (i > index) next.add(i - 1) })
+      return next
+    })
+    setEditingTasks(prev => {
+      const next: Record<number, MilestoneTask[]> = {}
+      Object.entries(prev).forEach(([k, v]) => {
+        const i = Number(k)
+        if (i < index) next[i] = v
+        else if (i > index) next[i - 1] = v
+      })
+      return next
+    })
     setRows(r => r.filter((_, i) => i !== index))
     if (pendingDeleteRef.current) {
       if (pendingTimerRef.current) clearTimeout(pendingTimerRef.current)
@@ -194,38 +226,38 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
   }
 
   function toggleExpand(index: number) {
-    if (expandedIndex === index) {
-      setExpandedIndex(null)
-      setEditingTasks([])
+    if (expandedIndices.has(index)) {
+      setExpandedIndices(prev => { const next = new Set(prev); next.delete(index); return next })
+      setEditingTasks(prev => { const next = { ...prev }; delete next[index]; return next })
     } else {
-      setExpandedIndex(index)
+      setExpandedIndices(prev => new Set([...prev, index]))
       const row = rows[index]
-      setEditingTasks(row.tasks.length > 0 ? row.tasks.map(t => ({ ...t })) : [{ task: '' }])
+      setEditingTasks(prev => ({ ...prev, [index]: row.tasks.length > 0 ? row.tasks.map(t => ({ ...t })) : [{ task: '' }] }))
     }
   }
 
-  async function saveExpandedTasks() {
-    if (expandedIndex === null) return
-    const row = rows[expandedIndex]
+  async function saveExpandedTasks(rowIndex: number) {
+    const row = rows[rowIndex]
     if (!row.id) {
       alert('Please save the milestone first before adding tasks.')
       return
     }
-    setSavingTasks(true)
+    const tasks = editingTasks[rowIndex] ?? []
+    setSavingTasks(prev => new Set([...prev, rowIndex]))
     try {
       const res = await fetch(`/api/projects/${projectId}/milestone-tasks`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ milestone_id: row.id, tasks: editingTasks.filter(t => t.task.trim()) }),
+        body: JSON.stringify({ milestone_id: row.id, tasks: tasks.filter(t => t.task.trim()) }),
       })
       if (!res.ok) throw new Error()
-      const { tasks } = await res.json()
-      setRows(r => r.map((r2, i) => i === expandedIndex ? { ...r2, tasks: tasks ?? [] } : r2))
-      setEditingTasks(tasks ?? [])
+      const { tasks: savedTasks } = await res.json()
+      setRows(r => r.map((r2, i) => i === rowIndex ? { ...r2, tasks: savedTasks ?? [] } : r2))
+      setEditingTasks(prev => ({ ...prev, [rowIndex]: savedTasks ?? [] }))
     } catch {
       alert('Failed to save tasks. Please try again.')
     } finally {
-      setSavingTasks(false)
+      setSavingTasks(prev => { const next = new Set(prev); next.delete(rowIndex); return next })
     }
   }
 
@@ -426,13 +458,13 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
                         <button
                           type="button"
                           onClick={() => toggleExpand(i)}
-                          aria-label={expandedIndex === i ? 'Collapse tasks' : 'Expand tasks'}
+                          aria-label={expandedIndices.has(i) ? 'Collapse tasks' : 'Expand tasks'}
                           className="text-[#94A3B8] hover:text-white transition-colors"
                         >
                           <svg
                             width="20" height="20" viewBox="0 0 24 24" fill="none"
                             stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-                            className={`transition-transform duration-150 ${expandedIndex === i ? 'rotate-90' : ''}`}
+                            className={`transition-transform duration-150 ${expandedIndices.has(i) ? 'rotate-90' : ''}`}
                           >
                             <polyline points="9 18 15 12 9 6" />
                           </svg>
@@ -463,7 +495,13 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
                         </select>
                       </td>
                       <td className="py-1 pr-2">
-                        <input value={row.notes} onChange={e => updateRow(i, 'notes', e.target.value)} className={cellInput} placeholder="Notes" />
+                        <button
+                          type="button"
+                          onClick={() => { setNotesModal({ kind: 'milestone', rowIndex: i }); setNotesModalText(row.notes) }}
+                          className={`${cellInput} text-left truncate ${row.notes ? 'text-white' : 'text-[#8899AA]'}`}
+                        >
+                          {row.notes || 'Notes...'}
+                        </button>
                       </td>
                       <td className="py-1 align-middle">
                         <button type="button" onClick={() => deleteRow(i)} aria-label="Delete milestone" className="text-[#94A3B8] hover:text-[#C8102E] transition-colors">
@@ -473,53 +511,98 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
                     </tr>
 
                     {/* Inline task editor */}
-                    {expandedIndex === i && (
+                    {expandedIndices.has(i) && (
                       <tr>
                         <td colSpan={10} className="pb-3 pt-0">
                           <div className="ml-6 mr-1 bg-[#0B1929] border border-[#1E3A5F] rounded-lg p-4">
                             <p className="text-[#94A3B8] text-xs uppercase tracking-wider font-medium mb-3">
                               Tasks — {row.details || '(untitled milestone)'}
                             </p>
-                            {editingTasks.length === 0 && (
-                              <p className="text-[#94A3B8] text-xs italic mb-2">No tasks added yet.</p>
-                            )}
-                            <div className="space-y-2">
-                              {editingTasks.map((t, ti) => (
-                                <div key={ti} className="flex gap-2 items-center">
-                                  <span className="text-[#94A3B8] text-xs w-5 shrink-0 text-right">{ti + 1}.</span>
-                                  <input
-                                    value={t.task}
-                                    onChange={e => setEditingTasks(ts => ts.map((x, xi) => xi === ti ? { ...x, task: e.target.value } : x))}
-                                    className={modalInput}
-                                    placeholder="Specify task..."
-                                  />
-                                  <button
-                                    type="button"
-                                    onClick={() => setEditingTasks(ts => ts.filter((_, xi) => xi !== ti))}
-                                    className="text-[#94A3B8] hover:text-[#C8102E] transition-colors shrink-0"
-                                  >
-                                    <TrashIcon />
-                                  </button>
-                                </div>
-                              ))}
-                            </div>
-                            <div className="flex items-center justify-between mt-3">
-                              <button
-                                type="button"
-                                onClick={() => setEditingTasks(ts => [...ts, { task: '' }])}
-                                className="text-[#94A3B8] hover:text-white text-xs transition-colors"
-                              >
-                                + Add Task
-                              </button>
-                              <button
-                                type="button"
-                                onClick={saveExpandedTasks}
-                                disabled={savingTasks}
-                                className="bg-[#C8102E] hover:bg-[#A50E25] disabled:opacity-60 disabled:cursor-not-allowed text-white text-xs font-semibold px-4 py-1.5 rounded-md transition-colors"
-                              >
-                                {savingTasks ? 'Saving...' : 'Save Tasks'}
-                              </button>
-                            </div>
+                            {(() => {
+                              const taskList = editingTasks[i] ?? []
+                              return (
+                                <>
+                                  {taskList.length > 0 && (
+                                    <div className="grid text-[#94A3B8] text-xs uppercase tracking-wider mb-1 gap-2" style={{ gridTemplateColumns: '20px 1fr 120px 120px 110px 64px 28px' }}>
+                                      <span />
+                                      <span>Task</span>
+                                      <span>Projected</span>
+                                      <span>Actual</span>
+                                      <span>Status</span>
+                                      <span>Notes</span>
+                                      <span />
+                                    </div>
+                                  )}
+                                  {taskList.length === 0 && (
+                                    <p className="text-[#94A3B8] text-xs italic mb-2">No tasks added yet.</p>
+                                  )}
+                                  <div className="space-y-2">
+                                    {taskList.map((t, ti) => (
+                                      <div key={ti} className="grid gap-2 items-center" style={{ gridTemplateColumns: '20px 1fr 120px 120px 110px 64px 28px' }}>
+                                        <span className="text-[#94A3B8] text-xs text-right">{ti + 1}.</span>
+                                        <input
+                                          value={t.task}
+                                          onChange={e => setEditingTasks(prev => ({ ...prev, [i]: (prev[i] ?? []).map((x, xi) => xi === ti ? { ...x, task: e.target.value } : x) }))}
+                                          className={modalInput}
+                                          placeholder="Specify task..."
+                                        />
+                                        <input
+                                          type="date"
+                                          value={t.projected_date ?? ''}
+                                          onChange={e => setEditingTasks(prev => ({ ...prev, [i]: (prev[i] ?? []).map((x, xi) => xi === ti ? { ...x, projected_date: e.target.value } : x) }))}
+                                          className={modalInput}
+                                        />
+                                        <input
+                                          type="date"
+                                          value={t.actual_date ?? ''}
+                                          onChange={e => setEditingTasks(prev => ({ ...prev, [i]: (prev[i] ?? []).map((x, xi) => xi === ti ? { ...x, actual_date: e.target.value } : x) }))}
+                                          className={modalInput}
+                                        />
+                                        <select
+                                          value={t.status ?? 'Active'}
+                                          onChange={e => setEditingTasks(prev => ({ ...prev, [i]: (prev[i] ?? []).map((x, xi) => xi === ti ? { ...x, status: e.target.value } : x) }))}
+                                          className={modalInput}
+                                        >
+                                          <option value="Active">Active</option>
+                                          <option value="Completed">Completed</option>
+                                        </select>
+                                        <button
+                                          type="button"
+                                          onClick={() => { setNotesModal({ kind: 'task', rowIndex: i, taskIndex: ti }); setNotesModalText(t.notes ?? '') }}
+                                          className={`text-xs px-2 py-1.5 border rounded transition-colors whitespace-nowrap ${t.notes ? 'border-[#C8102E] text-white' : 'border-[#1E3A5F] text-[#94A3B8] hover:text-white'}`}
+                                        >
+                                          {t.notes ? 'View' : 'Note'}
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => setEditingTasks(prev => ({ ...prev, [i]: (prev[i] ?? []).filter((_, xi) => xi !== ti) }))}
+                                          className="text-[#94A3B8] hover:text-[#C8102E] transition-colors"
+                                        >
+                                          <TrashIcon />
+                                        </button>
+                                      </div>
+                                    ))}
+                                  </div>
+                                  <div className="flex items-center justify-between mt-3">
+                                    <button
+                                      type="button"
+                                      onClick={() => setEditingTasks(prev => ({ ...prev, [i]: [...(prev[i] ?? []), { task: '', projected_date: '', actual_date: '', status: 'Active', notes: '' }] }))}
+                                      className="text-[#94A3B8] hover:text-white text-xs transition-colors"
+                                    >
+                                      + Add Task
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => saveExpandedTasks(i)}
+                                      disabled={savingTasks.has(i)}
+                                      className="bg-[#C8102E] hover:bg-[#A50E25] disabled:opacity-60 disabled:cursor-not-allowed text-white text-xs font-semibold px-4 py-1.5 rounded-md transition-colors"
+                                    >
+                                      {savingTasks.has(i) ? 'Saving...' : 'Save Tasks'}
+                                    </button>
+                                  </div>
+                                </>
+                              )
+                            })()}
                           </div>
                         </td>
                       </tr>
@@ -673,6 +756,53 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
                 className="flex-1 bg-[#C8102E] hover:bg-[#A50E25] disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold py-2.5 rounded-lg text-sm transition-colors"
               >
                 {savingNote ? 'Saving...' : 'Save Note'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Notes popup modal (milestone or task) */}
+      {notesModal !== null && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50" role="dialog" aria-modal="true" aria-label="Notes">
+          <div className="bg-[#112240] border border-[#1E3A5F] rounded-xl p-6 w-full max-w-lg mx-4 shadow-xl space-y-4">
+            <h3 className="text-white font-semibold">
+              {notesModal.kind === 'milestone' ? 'Milestone Notes' : 'Task Notes'}
+            </h3>
+            <textarea
+              value={notesModalText}
+              onChange={e => setNotesModalText(e.target.value)}
+              placeholder="Write your note..."
+              autoFocus
+              className={`${modalInput} resize-none`}
+              rows={6}
+            />
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => { setNotesModal(null); setNotesModalText('') }}
+                className="flex-1 border border-[#1E3A5F] text-[#94A3B8] hover:text-white hover:border-white rounded-lg py-2.5 text-sm font-medium transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (notesModal.kind === 'milestone') {
+                    updateRow(notesModal.rowIndex, 'notes', notesModalText)
+                  } else {
+                    const { rowIndex, taskIndex } = notesModal
+                    setEditingTasks(prev => ({
+                      ...prev,
+                      [rowIndex]: (prev[rowIndex] ?? []).map((t, ti) => ti === taskIndex ? { ...t, notes: notesModalText } : t)
+                    }))
+                  }
+                  setNotesModal(null)
+                  setNotesModalText('')
+                }}
+                className="flex-1 bg-[#C8102E] hover:bg-[#A50E25] text-white font-semibold py-2.5 rounded-lg text-sm transition-colors"
+              >
+                Save
               </button>
             </div>
           </div>

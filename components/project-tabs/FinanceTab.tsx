@@ -40,10 +40,10 @@ export default function FinanceTab({ projectId }: { projectId: string }) {
   const [uploadError, setUploadError] = useState(false)
   const [deleteError, setDeleteError] = useState(false)
 
-  // Per-file notes editing: map of fileId -> draft notes text
+  // Per-file notes and status editing
   const [noteDrafts, setNoteDrafts] = useState<Record<string, string>>({})
-  // Which fileId is currently saving notes
-  const [savingNotes, setSavingNotes] = useState<string | null>(null)
+  const [statusDrafts, setStatusDrafts] = useState<Record<string, string>>({})
+  const [savingDrafts, setSavingDrafts] = useState<string | null>(null)
 
   function submitPassword(e: React.FormEvent) {
     e.preventDefault()
@@ -62,9 +62,11 @@ export default function FinanceTab({ projectId }: { projectId: string }) {
       .then((r) => { if (!r.ok) throw new Error(); return r.json() })
       .then((data: FinanceFile[]) => {
         setFiles(data)
-        const drafts: Record<string, string> = {}
-        data.forEach(f => { drafts[f.id] = f.notes ?? '' })
-        setNoteDrafts(drafts)
+        const notes: Record<string, string> = {}
+        const statuses: Record<string, string> = {}
+        data.forEach(f => { notes[f.id] = f.notes ?? ''; statuses[f.id] = f.status ?? '' })
+        setNoteDrafts(notes)
+        setStatusDrafts(statuses)
       })
       .catch(() => setFetchError(true))
       .finally(() => setLoading(false))
@@ -90,6 +92,7 @@ export default function FinanceTab({ projectId }: { projectId: string }) {
       const newFile: FinanceFile = await res.json()
       setFiles((f) => [newFile, ...f.filter((x) => x.file_name !== newFile.file_name)])
       setNoteDrafts(d => ({ ...d, [newFile.id]: newFile.notes ?? '' }))
+      setStatusDrafts(d => ({ ...d, [newFile.id]: newFile.status ?? '' }))
       closeModal()
     } catch {
       setUploadError(true)
@@ -120,31 +123,32 @@ export default function FinanceTab({ projectId }: { projectId: string }) {
       if (!res.ok) throw new Error()
       setFiles((f) => f.filter((x) => x.id !== fileId))
       setNoteDrafts(d => { const next = { ...d }; delete next[fileId]; return next })
+      setStatusDrafts(d => { const next = { ...d }; delete next[fileId]; return next })
     } catch {
       setDeleteError(true)
     }
   }
 
-  async function saveNotes(fileId: string) {
-    setSavingNotes(fileId)
+  async function saveDrafts(fileId: string) {
+    setSavingDrafts(fileId)
     try {
       const res = await fetch(`/api/projects/${projectId}/finance-files/${fileId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ notes: noteDrafts[fileId] ?? '' }),
+        body: JSON.stringify({ notes: noteDrafts[fileId] ?? '', status: statusDrafts[fileId] ?? '' }),
       })
       if (!res.ok) throw new Error()
-      setFiles(f => f.map(x => x.id === fileId ? { ...x, notes: noteDrafts[fileId] || null } : x))
+      setFiles(f => f.map(x => x.id === fileId ? { ...x, notes: noteDrafts[fileId] || null, status: statusDrafts[fileId] || null } : x))
     } catch {
       // silent fail — user can retry
     } finally {
-      setSavingNotes(null)
+      setSavingDrafts(null)
     }
   }
 
-  function notesChanged(fileId: string): boolean {
+  function draftsChanged(fileId: string): boolean {
     const file = files.find(f => f.id === fileId)
-    return (noteDrafts[fileId] ?? '') !== (file?.notes ?? '')
+    return (noteDrafts[fileId] ?? '') !== (file?.notes ?? '') || (statusDrafts[fileId] ?? '') !== (file?.status ?? '')
   }
 
   if (locked) {
@@ -190,6 +194,7 @@ export default function FinanceTab({ projectId }: { projectId: string }) {
               <th className="pb-2 font-medium pr-4">Name</th>
               <th className="pb-2 font-medium pr-4">Type</th>
               <th className="pb-2 font-medium pr-4">Uploaded</th>
+              <th className="pb-2 font-medium pr-4">Status</th>
               <th className="pb-2 font-medium pr-4">Notes</th>
               <th className="pb-2" />
               <th className="pb-2" />
@@ -207,7 +212,15 @@ export default function FinanceTab({ projectId }: { projectId: string }) {
                 <td className="py-3 pr-4 text-[#94A3B8] whitespace-nowrap">
                   {new Date(f.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                 </td>
-                <td className="py-3 pr-4 w-72">
+                <td className="py-3 pr-4 w-40">
+                  <input
+                    value={statusDrafts[f.id] ?? ''}
+                    onChange={e => setStatusDrafts(d => ({ ...d, [f.id]: e.target.value }))}
+                    placeholder="Add status..."
+                    className="w-full bg-[#0B1929] border border-[#1E3A5F] rounded-md px-2 py-1.5 text-white text-xs placeholder-[#8899AA] focus:outline-none focus:ring-1 focus:ring-[#C8102E] focus:border-transparent transition-colors"
+                  />
+                </td>
+                <td className="py-3 pr-4 w-64">
                   <textarea
                     value={noteDrafts[f.id] ?? ''}
                     onChange={e => setNoteDrafts(d => ({ ...d, [f.id]: e.target.value }))}
@@ -215,14 +228,14 @@ export default function FinanceTab({ projectId }: { projectId: string }) {
                     rows={2}
                     className="w-full bg-[#0B1929] border border-[#1E3A5F] rounded-md px-2 py-1.5 text-white text-xs placeholder-[#8899AA] focus:outline-none focus:ring-1 focus:ring-[#C8102E] focus:border-transparent transition-colors resize-none"
                   />
-                  {notesChanged(f.id) && (
+                  {draftsChanged(f.id) && (
                     <button
                       type="button"
-                      onClick={() => saveNotes(f.id)}
-                      disabled={savingNotes === f.id}
+                      onClick={() => saveDrafts(f.id)}
+                      disabled={savingDrafts === f.id}
                       className="mt-1 text-xs text-[#94A3B8] hover:text-white disabled:opacity-40 transition-colors font-medium"
                     >
-                      {savingNotes === f.id ? 'Saving...' : 'Save notes'}
+                      {savingDrafts === f.id ? 'Saving...' : 'Save changes'}
                     </button>
                   )}
                 </td>
