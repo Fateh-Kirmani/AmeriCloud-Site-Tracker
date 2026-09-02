@@ -90,7 +90,7 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
           fetch(`/api/projects/${projectId}/milestones`),
           fetch(`/api/projects/${projectId}/notes`),
         ])
-        const milestonesData: { milestones: Array<{ id: string; details: string | null; owner: string | null; projected_date: string | null; actualized_date: string | null; notes: string | null; status: string | null; tasks: MilestoneTask[] }>; project_notes: string } = await milestonesRes.json()
+        const milestonesData: { milestones: Array<{ id: string; details: string | null; owner: string | null; owner_email: string | null; projected_date: string | null; actualized_date: string | null; notes: string | null; status: string | null; tasks: MilestoneTask[] }>; project_notes: string } = await milestonesRes.json()
         const notesData: ProjectNote[] = await notesRes.json()
         setNotes(notesData)
         const milestones = milestonesData.milestones ?? []
