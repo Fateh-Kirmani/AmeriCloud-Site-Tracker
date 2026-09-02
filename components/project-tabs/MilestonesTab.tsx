@@ -3,7 +3,18 @@ import { Fragment, useState, useEffect, useRef } from 'react'
 import { useSession } from 'next-auth/react'
 import TrashIcon from '@/components/icons/TrashIcon'
 import { MilestoneRow, MilestoneTask, ProjectNote } from '@/types/milestone'
-import { MANAGERS } from '@/lib/managers'
+import SearchableCombobox, { ComboboxOption } from '@/components/SearchableCombobox'
+
+async function fetchGraphUsers(q: string): Promise<ComboboxOption[]> {
+  const res = await fetch(`/api/graph/users?q=${encodeURIComponent(q)}`)
+  if (!res.ok) return []
+  const data: { displayName: string; mail?: string; userPrincipalName: string }[] = await res.json()
+  return data.map(u => ({
+    label: u.displayName,
+    value: u.displayName,
+    secondary: u.mail ?? u.userPrincipalName,
+  }))
+}
 
 function PencilIcon() {
   return (
@@ -128,7 +139,7 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
                 const reloaded = await reloadRes.json()
                 const reloadedRows = (reloaded.milestones ?? []).map((m: typeof milestones[0]) => ({
                   id: m.id, details: m.details ?? '', owner: m.owner ?? '',
-                  owner_email: MANAGERS.find(mg => mg.name === (m.owner ?? ''))?.email ?? '',
+                  owner_email: m.owner_email ?? '',
                   projected_date: m.projected_date ?? '', actualized_date: m.actualized_date ?? '',
                   notes: m.notes ?? '', status: m.status ?? 'Active', tasks: m.tasks ?? [],
                 }))
@@ -147,7 +158,7 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
           id: m.id,
           details: m.details ?? '',
           owner: m.owner ?? '',
-          owner_email: MANAGERS.find(mg => mg.name === (m.owner ?? ''))?.email ?? '',
+          owner_email: m.owner_email ?? '',
           projected_date: m.projected_date ?? '',
           actualized_date: m.actualized_date ?? '',
           notes: m.notes ?? '',
@@ -176,12 +187,11 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
   }
 
   function updateRow(index: number, field: keyof MilestoneRow, value: string) {
-    setRows(r => r.map((row, i) => {
-      if (i !== index) return row
-      const updated = { ...row, [field]: value }
-      if (field === 'owner') updated.owner_email = MANAGERS.find(m => m.name === value)?.email ?? ''
-      return updated
-    }))
+    setRows(r => r.map((row, i) => i !== index ? row : { ...row, [field]: value }))
+  }
+
+  function setOwnerFields(index: number, name: string, email: string) {
+    setRows(r => r.map((row, i) => i !== index ? row : { ...row, owner: name, owner_email: email }))
   }
 
   function deleteRow(index: number) {
@@ -474,10 +484,13 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
                         <input value={row.details} onChange={e => updateRow(i, 'details', e.target.value)} className={cellInput} placeholder="Milestone details" />
                       </td>
                       <td className="py-1 pr-2">
-                        <select value={row.owner} onChange={e => updateRow(i, 'owner', e.target.value)} className={cellInput}>
-                          <option value="">— Select —</option>
-                          {MANAGERS.map(m => <option key={m.name} value={m.name}>{m.name}</option>)}
-                        </select>
+                        <SearchableCombobox
+                          value={row.owner}
+                          onSelect={(name, email) => setOwnerFields(i, name, email ?? '')}
+                          fetchOptions={fetchGraphUsers}
+                          placeholder="Search name..."
+                          inputClassName={cellInput}
+                        />
                       </td>
                       <td className="py-1 pr-2">
                         <input value={row.owner_email} readOnly className={cellReadonly} placeholder="Auto-filled" />

@@ -3,6 +3,13 @@ import { useState, useEffect, useRef } from 'react'
 import TrashIcon from '@/components/icons/TrashIcon'
 import { CrewMemberRow } from '@/types/milestone'
 import { FIELD_ENGINEERS } from '@/lib/field-engineers'
+import SearchableCombobox, { ComboboxOption } from '@/components/SearchableCombobox'
+
+const ENGINEER_OPTIONS: ComboboxOption[] = FIELD_ENGINEERS.map(e => ({
+  label: e.name,
+  value: e.name,
+  secondary: e.email !== 'N/A' ? e.email : undefined,
+}))
 
 const inputClass = 'w-full bg-[#0B1929] border border-[#1E3A5F] rounded-md px-3 py-2 text-white text-sm placeholder-[#8899AA] focus:outline-none focus:ring-2 focus:ring-[#C8102E] focus:border-transparent transition-colors'
 const readonlyClass = 'w-full bg-[#0D1F35] border border-[#1E3A5F] rounded-md px-3 py-2 text-[#94A3B8] text-sm cursor-not-allowed'
@@ -167,10 +174,17 @@ export default function TaskSchedulerTab({ projectId }: { projectId: string }) {
         const availableTasks = selectedMs?.tasks ?? []
         return (
           <div key={i} className="flex gap-2 items-center">
-            <select value={row.name} onChange={e => updateEngineer(i, e.target.value)} className={`${inputClass} flex-1`}>
-              <option value="">Select engineer...</option>
-              {FIELD_ENGINEERS.map(e => <option key={e.name} value={e.name}>{e.name}</option>)}
-            </select>
+            <SearchableCombobox
+              value={row.name}
+              onSelect={(name, email) => {
+                const resolved = email || (FIELD_ENGINEERS.find(e => e.name === name)?.email ?? '')
+                setRows(r => r.map((row2, i2) => i2 === i ? { ...row2, name, email: resolved } : row2))
+              }}
+              options={ENGINEER_OPTIONS}
+              placeholder="Search engineer..."
+              className="flex-1"
+              inputClassName={inputClass}
+            />
             <input value={row.email} readOnly className={`${readonlyClass} flex-1`} placeholder="Auto-filled" />
             <select value={row.selected_milestone_id ?? ''} onChange={e => updateMilestone(i, e.target.value)} className={`${inputClass} flex-1`}>
               <option value="">Select milestone...</option>
