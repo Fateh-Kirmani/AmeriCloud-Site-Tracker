@@ -295,7 +295,7 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
       const { milestones: saved } = await res.json()
       setRows(saved.map((m: MilestoneRow & { tasks: MilestoneTask[] }) => ({
         id: m.id, details: m.details ?? '', owner: m.owner ?? '',
-        owner_email: MANAGERS.find(mg => mg.name === (m.owner ?? ''))?.email ?? '',
+        owner_email: m.owner_email ?? '',
         projected_date: m.projected_date ?? '', actualized_date: m.actualized_date ?? '',
         notes: m.notes ?? '', status: m.status ?? 'Active', tasks: m.tasks ?? [],
       })))
