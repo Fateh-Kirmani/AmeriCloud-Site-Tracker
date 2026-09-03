@@ -1,4 +1,4 @@
-import nodemailer from 'nodemailer'
+import { Resend } from 'resend'
 
 export async function sendEmail({
   to,
@@ -11,20 +11,11 @@ export async function sendEmail({
   text: string
   html?: string
 }) {
-  if (!to || !process.env.SMTP_USER || !process.env.SMTP_PASS) return
+  if (!to || !process.env.RESEND_API_KEY || !process.env.RESEND_FROM_EMAIL) return
   try {
-    const transporter = nodemailer.createTransport({
-      host: 'smtp.office365.com',
-      port: 587,
-      secure: false,
-      requireTLS: true,
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-      },
-    })
-    await transporter.sendMail({
-      from: `AmeriCloud Site Tracker <${process.env.SMTP_USER}>`,
+    const resend = new Resend(process.env.RESEND_API_KEY)
+    await resend.emails.send({
+      from: `AmeriCloud Site Tracker <${process.env.RESEND_FROM_EMAIL}>`,
       to,
       subject,
       text,
