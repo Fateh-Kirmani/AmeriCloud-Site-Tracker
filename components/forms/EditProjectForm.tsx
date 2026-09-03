@@ -53,13 +53,15 @@ export default function EditProjectForm({
   project,
   templates = [],
   fullTemplates = [],
+  initialTab,
 }: {
   project: Project
   templates?: { id: string; name: string }[]
   fullTemplates?: { name: string; items: { details: string | null; notes: string | null; sort_order: number; tasks?: { task: string }[] }[] }[]
+  initialTab?: Tab
 }) {
   const router = useRouter()
-  const [activeTab, setActiveTab] = useState<Tab>('General Information')
+  const [activeTab, setActiveTab] = useState<Tab>(initialTab ?? 'General Information')
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 

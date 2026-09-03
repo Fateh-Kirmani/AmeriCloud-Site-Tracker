@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseClient } from '@/lib/supabase'
-import { sendEmail } from '@/lib/email'
+import { sendEmail, buildEmailHtml } from '@/lib/email'
 
 export async function GET(
   _request: NextRequest,
@@ -75,20 +75,9 @@ export async function PUT(
 
     const { data: currentMilestones } = await supabase
       .from('milestones')
-      .select('id, owner, details, projected_date, actualized_date, notes')
+      .select('id, owner, owner_email, details, projected_date, actualized_date, notes')
       .eq('project_id', id)
     const currentMap = new Map((currentMilestones ?? []).map(m => [m.id, m]))
-
-    const { data: teamMembers } = await supabase
-      .from('team_members')
-      .select('name, email')
-      .eq('project_id', id)
-    const ownerEmailMap = new Map<string, string>()
-    for (const tm of teamMembers ?? []) {
-      if (tm.name && tm.email && !ownerEmailMap.has(tm.name)) {
-        ownerEmailMap.set(tm.name, tm.email)
-      }
-    }
 
     if (deleted_ids.length > 0) {
       const { error } = await supabase.from('milestones').delete().eq('project_id', id).in('id', deleted_ids)
@@ -105,6 +94,7 @@ export async function PUT(
         project_id: id,
         details: (m.details as string) || null,
         owner: (m.owner as string) || null,
+        owner_email: (m.owner_email as string) || null,
         projected_date: (m.projected_date as string) || null,
         actualized_date: (m.actualized_date as string) || null,
         notes: (m.notes as string) || null,
@@ -120,20 +110,32 @@ export async function PUT(
 
     try {
       const projectName = project.site_name
+      const baseUrl = (process.env.NEXTAUTH_URL ?? '').replace(/\/$/, '')
+      const milestoneLink = `${baseUrl}/api/auth/signin/microsoft?callbackUrl=${encodeURIComponent(`/projects/${id}/edit?tab=Milestones`)}`
       const emailPromises: Promise<void>[] = []
 
       // Deleted milestones
       for (const deletedId of deleted_ids as string[]) {
         const current = currentMap.get(deletedId)
-        if (current?.owner) {
-          const email = ownerEmailMap.get(current.owner)
-          if (email) {
-            emailPromises.push(sendEmail({
-              to: email,
-              subject: `AmeriCloud Site Tracker - ${projectName} - Milestone Deleted`,
-              text: `A milestone you were assigned to has been deleted from project "${projectName}".\n\nMilestone: ${current.details ?? '(untitled)'}\nProjected Date: ${current.projected_date ?? '—'}\nNotes: ${current.notes ?? '—'}`,
-            }))
-          }
+        const email = current?.owner_email || ''
+        if (current?.owner && email) {
+          const details = current.details ?? '(untitled)'
+          emailPromises.push(sendEmail({
+            to: email,
+            subject: `AmeriCloud Site Tracker — ${projectName} — Milestone Removed`,
+            text: `A milestone you were assigned to has been removed from project "${projectName}".\n\nMilestone: ${details}\nProjected Date: ${current.projected_date ?? '—'}`,
+            html: buildEmailHtml({
+              heading: 'Milestone Removed',
+              body: `A milestone you were assigned to has been removed from project <strong>${projectName}</strong>.`,
+              details: [
+                { label: 'Project', value: projectName },
+                { label: 'Milestone', value: details },
+                { label: 'Projected Date', value: current.projected_date ?? '—' },
+              ],
+              linkHref: milestoneLink,
+              linkLabel: 'View Project',
+            }),
+          }))
         }
       }
 
@@ -141,51 +143,61 @@ export async function PUT(
       const incomingRows = milestones as Record<string, unknown>[]
       for (const row of incomingRows) {
         const newOwner = (row.owner as string) || ''
+        const email = (row.owner_email as string) || ''
         const newDetails = (row.details as string) || ''
         const newProjectedDate = (row.projected_date as string) || ''
         const newActualizedDate = (row.actualized_date as string) || ''
         const newNotes = (row.notes as string) || ''
         const rowId = row.id as string | undefined
 
-        if (!newOwner) continue
-        const email = ownerEmailMap.get(newOwner)
-        if (!email) continue
+        if (!newOwner || !email) continue
 
-        if (!rowId) {
+        const current = rowId ? currentMap.get(rowId) : undefined
+        const isNew = !rowId || !current
+        const ownerChanged = !isNew && (current?.owner ?? '') !== newOwner
+
+        if (isNew || ownerChanged) {
           emailPromises.push(sendEmail({
             to: email,
-            subject: `AmeriCloud Site Tracker - ${projectName} - Milestone Assigned`,
-            text: `You have been assigned to a milestone on project "${projectName}".\n\nMilestone: ${newDetails || '(untitled)'}\nProjected Date: ${newProjectedDate || '—'}\nNotes: ${newNotes || '—'}`,
+            subject: `AmeriCloud Site Tracker — ${projectName} — Milestone Assigned`,
+            text: `You have been assigned to a milestone on project "${projectName}".\n\nMilestone: ${newDetails || '(untitled)'}\nProjected Date: ${newProjectedDate || '—'}\nNotes: ${newNotes || '—'}\n\nView project: ${milestoneLink}`,
+            html: buildEmailHtml({
+              heading: 'Milestone Assigned to You',
+              body: `You have been assigned to a milestone on project <strong>${projectName}</strong>.`,
+              details: [
+                { label: 'Project', value: projectName },
+                { label: 'Milestone', value: newDetails || '(untitled)' },
+                { label: 'Projected Date', value: newProjectedDate || '—' },
+                { label: 'Notes', value: newNotes || '—' },
+              ],
+              linkHref: milestoneLink,
+              linkLabel: 'View Milestone',
+            }),
           }))
-        } else {
-          const current = currentMap.get(rowId)
-          if (!current) {
-            emailPromises.push(sendEmail({
-              to: email,
-              subject: `AmeriCloud Site Tracker - ${projectName} - Milestone Assigned`,
-              text: `You have been assigned to a milestone on project "${projectName}".\n\nMilestone: ${newDetails || '(untitled)'}\nProjected Date: ${newProjectedDate || '—'}\nNotes: ${newNotes || '—'}`,
-            }))
-          } else {
-            const oldOwner = current.owner ?? ''
-            if (newOwner !== oldOwner) {
-              emailPromises.push(sendEmail({
-                to: email,
-                subject: `AmeriCloud Site Tracker - ${projectName} - Milestone Assigned`,
-                text: `You have been assigned to a milestone on project "${projectName}".\n\nMilestone: ${newDetails || '(untitled)'}\nProjected Date: ${newProjectedDate || '—'}\nNotes: ${newNotes || '—'}`,
-              }))
-            } else if (
-              newDetails !== (current.details ?? '') ||
-              newProjectedDate !== (current.projected_date ?? '') ||
-              newActualizedDate !== (current.actualized_date ?? '') ||
-              newNotes !== (current.notes ?? '')
-            ) {
-              emailPromises.push(sendEmail({
-                to: email,
-                subject: `AmeriCloud Site Tracker - ${projectName} - Milestone Changed`,
-                text: `A milestone you are assigned to has been updated on project "${projectName}".\n\nMilestone: ${newDetails || '(untitled)'}\nProjected Date: ${newProjectedDate || '—'}\nActual Date: ${newActualizedDate || '—'}\nNotes: ${newNotes || '—'}`,
-              }))
-            }
-          }
+        } else if (
+          newDetails !== (current?.details ?? '') ||
+          newProjectedDate !== (current?.projected_date ?? '') ||
+          newActualizedDate !== (current?.actualized_date ?? '') ||
+          newNotes !== (current?.notes ?? '')
+        ) {
+          emailPromises.push(sendEmail({
+            to: email,
+            subject: `AmeriCloud Site Tracker — ${projectName} — Milestone Updated`,
+            text: `A milestone you are assigned to has been updated on project "${projectName}".\n\nMilestone: ${newDetails || '(untitled)'}\nProjected Date: ${newProjectedDate || '—'}\nActual Date: ${newActualizedDate || '—'}\nNotes: ${newNotes || '—'}\n\nView project: ${milestoneLink}`,
+            html: buildEmailHtml({
+              heading: 'Milestone Updated',
+              body: `A milestone you are assigned to has been updated on project <strong>${projectName}</strong>.`,
+              details: [
+                { label: 'Project', value: projectName },
+                { label: 'Milestone', value: newDetails || '(untitled)' },
+                { label: 'Projected Date', value: newProjectedDate || '—' },
+                { label: 'Actual Date', value: newActualizedDate || '—' },
+                { label: 'Notes', value: newNotes || '—' },
+              ],
+              linkHref: milestoneLink,
+              linkLabel: 'View Milestone',
+            }),
+          }))
         }
       }
 

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseClient } from '@/lib/supabase'
-import { sendEmail } from '@/lib/email'
+import { sendEmail, buildEmailHtml } from '@/lib/email'
 
 export async function GET(
   _request: NextRequest,
@@ -93,41 +93,43 @@ export async function PUT(
 
     try {
       const projectName = project.site_name
+      const baseUrl = (process.env.NEXTAUTH_URL ?? '').replace(/\/$/, '')
+      const taskLink = `${baseUrl}/api/auth/signin/microsoft?callbackUrl=${encodeURIComponent(`/projects/${id}/edit?tab=Task Scheduler`)}`
       const emailPromises: Promise<void>[] = []
       const incomingCrew = crew_members as Record<string, unknown>[]
 
       for (const row of incomingCrew) {
         const newTask = (row.task as string) || ''
         const newEmail = (row.email as string) || ''
+        const newName = (row.name as string) || ''
         const newDateFrom = (row.date_from as string) || ''
         const newDateTo = (row.date_to as string) || ''
         const rowId = row.id as string | undefined
 
         if (!newTask || !newEmail) continue
 
-        if (!rowId) {
-          // New crew member with task — Task Assigned
+        const current = rowId ? currentCrewMap.get(rowId) : undefined
+        const isNew = !rowId || !current
+        const taskChanged = !isNew && (current?.task ?? '') !== newTask
+
+        if (isNew || taskChanged) {
           emailPromises.push(sendEmail({
             to: newEmail,
-            subject: `AmeriCloud Site Tracker - ${projectName} - Task Assigned`,
-            text: `You have been assigned a task on project "${projectName}".\n\nTask: ${newTask}\nDate From: ${newDateFrom || '—'}\nDate To: ${newDateTo || '—'}`,
+            subject: `AmeriCloud Site Tracker — ${projectName} — Task Assigned`,
+            text: `You have been assigned a task on project "${projectName}".\n\nTask: ${newTask}\nDate From: ${newDateFrom || '—'}\nDate To: ${newDateTo || '—'}\n\nView project: ${taskLink}`,
+            html: buildEmailHtml({
+              heading: 'Task Assigned to You',
+              body: `${newName ? `Hi ${newName.split(' ')[0]}, you` : 'You'} have been assigned a task on project <strong>${projectName}</strong>.`,
+              details: [
+                { label: 'Project', value: projectName },
+                { label: 'Task', value: newTask },
+                { label: 'Date From', value: newDateFrom || '—' },
+                { label: 'Date To', value: newDateTo || '—' },
+              ],
+              linkHref: taskLink,
+              linkLabel: 'View Task Schedule',
+            }),
           }))
-        } else {
-          const current = currentCrewMap.get(rowId)
-          if (!current) {
-            emailPromises.push(sendEmail({
-              to: newEmail,
-              subject: `AmeriCloud Site Tracker - ${projectName} - Task Assigned`,
-              text: `You have been assigned a task on project "${projectName}".\n\nTask: ${newTask}\nDate From: ${newDateFrom || '—'}\nDate To: ${newDateTo || '—'}`,
-            }))
-          } else if (newTask !== (current.task ?? '')) {
-            // Task changed — Task Assigned
-            emailPromises.push(sendEmail({
-              to: newEmail,
-              subject: `AmeriCloud Site Tracker - ${projectName} - Task Assigned`,
-              text: `You have been assigned a task on project "${projectName}".\n\nTask: ${newTask}\nDate From: ${newDateFrom || '—'}\nDate To: ${newDateTo || '—'}`,
-            }))
-          }
         }
       }
 

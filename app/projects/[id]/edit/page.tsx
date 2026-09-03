@@ -4,12 +4,19 @@ import EditProjectForm from '@/components/forms/EditProjectForm'
 import ImportToBomButton from '@/components/forms/ImportToBomButton'
 import { Project } from '@/types/project'
 
+const VALID_TABS = ['General Information', 'Milestones', 'Task Scheduler', 'Files', 'Finance'] as const
+type Tab = typeof VALID_TABS[number]
+
 export default async function EditProjectPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>
+  searchParams: Promise<{ tab?: string }>
 }) {
   const { id } = await params
+  const { tab } = await searchParams
+  const initialTab = VALID_TABS.includes(tab as Tab) ? (tab as Tab) : undefined
 
   const supabase = createSupabaseClient()
   const { data, error } = await supabase
@@ -66,7 +73,7 @@ export default async function EditProjectPage({
           projectOverview={project.project_scope ?? ''}
         />
       </div>
-      <EditProjectForm project={project} templates={templates} fullTemplates={fullTemplates} />
+      <EditProjectForm project={project} templates={templates} fullTemplates={fullTemplates} initialTab={initialTab} />
     </div>
   )
 }
