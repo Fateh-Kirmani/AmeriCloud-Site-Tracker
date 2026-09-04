@@ -1,4 +1,26 @@
-import nodemailer from 'nodemailer'
+async function getAppAccessToken(): Promise<string | null> {
+  const tenantId = process.env.MICROSOFT_TENANT_ID
+  const clientId = process.env.MICROSOFT_CLIENT_ID
+  const clientSecret = process.env.MICROSOFT_CLIENT_SECRET
+  if (!tenantId || !clientId || !clientSecret) return null
+
+  const res = await fetch(
+    `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        grant_type: 'client_credentials',
+        client_id: clientId,
+        client_secret: clientSecret,
+        scope: 'https://graph.microsoft.com/.default',
+      }),
+    }
+  )
+  if (!res.ok) return null
+  const data = await res.json()
+  return data.access_token ?? null
+}
 
 export async function sendEmail({
   to,
@@ -11,25 +33,42 @@ export async function sendEmail({
   text: string
   html?: string
 }) {
-  if (!to || !process.env.SMTP_USER || !process.env.SMTP_PASS) return
+  const from = process.env.SMTP_FROM_EMAIL
+  if (!to || !from) return
+
   try {
-    const transporter = nodemailer.createTransport({
-      host: 'smtp.office365.com',
-      port: 587,
-      secure: false,
-      requireTLS: true,
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-      },
-    })
-    await transporter.sendMail({
-      from: `AmeriCloud Site Tracker <${process.env.SMTP_USER}>`,
-      to,
-      subject,
-      text,
-      ...(html ? { html } : {}),
-    })
+    const token = await getAppAccessToken()
+    if (!token) {
+      console.error('[sendEmail] Could not obtain app access token')
+      return
+    }
+
+    const res = await fetch(
+      `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(from)}/sendMail`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: {
+            subject,
+            body: {
+              contentType: html ? 'HTML' : 'Text',
+              content: html ?? text,
+            },
+            toRecipients: [{ emailAddress: { address: to } }],
+          },
+          saveToSentItems: false,
+        }),
+      }
+    )
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      console.error('[sendEmail] Graph API error:', err)
+    }
   } catch (err) {
     console.error('[sendEmail] Failed to send to', to, err)
   }
