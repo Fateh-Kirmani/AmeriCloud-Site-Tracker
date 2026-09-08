@@ -124,7 +124,7 @@ export default function ManagerialTeamTab({ projectId }: { projectId: string }) 
       <div className="flex items-center justify-between pt-2">
         <button type="button" onClick={addRow} className="text-[#94A3B8] hover:text-white text-sm font-medium transition-colors">+ Add Team Member</button>
         <div className="flex flex-col items-end gap-1">
-          {saveError && <p className="text-[#F87171] text-xs">Failed to save. Please try again.</p>}
+          {saveError && <p role="alert" className="text-[#F87171] text-xs">Failed to save. Please try again.</p>}
           <button type="button" onClick={save} disabled={saving} className="bg-[#C8102E] hover:bg-[#A50E25] disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold px-6 py-2.5 rounded-lg transition-colors text-sm uppercase tracking-widest">
             {saving ? 'Saving...' : 'Save Changes'}
           </button>

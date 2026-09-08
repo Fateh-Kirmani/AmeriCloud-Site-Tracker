@@ -63,6 +63,7 @@ export default function FinanceTab({ projectId }: { projectId: string }) {
   const [addingEmail, setAddingEmail] = useState<string | null>(null)
   const [removingId, setRemovingId] = useState<string | null>(null)
   const [addError, setAddError] = useState('')
+  const [saveDraftError, setSaveDraftError] = useState<string | null>(null)
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Check access on mount
@@ -223,8 +224,11 @@ export default function FinanceTab({ projectId }: { projectId: string }) {
         body: JSON.stringify({ notes: noteDrafts[fileId] ?? '', status: statusDrafts[fileId] ?? '' }),
       })
       if (!res.ok) throw new Error()
+      setSaveDraftError(null)
       setFiles(f => f.map(x => x.id === fileId ? { ...x, notes: noteDrafts[fileId] || null, status: statusDrafts[fileId] || null } : x))
-    } catch { /* silent — user can retry */ } finally {
+    } catch {
+      setSaveDraftError('Failed to save changes. Please try again.')
+    } finally {
       setSavingDrafts(null)
     }
   }
@@ -346,7 +350,8 @@ export default function FinanceTab({ projectId }: { projectId: string }) {
         </table>
       )}
 
-      {deleteError && <p className="text-[#F87171] text-xs">Failed to delete file. Please try again.</p>}
+      {deleteError && <p role="alert" className="text-[#F87171] text-xs">Failed to delete file. Please try again.</p>}
+      {saveDraftError && <p role="alert" className="text-[#F87171] text-xs">{saveDraftError}</p>}
       <button type="button" onClick={() => setShowUploadModal(true)} className="text-[#94A3B8] hover:text-white text-sm font-medium transition-colors">
         + Upload File
       </button>
@@ -368,10 +373,10 @@ export default function FinanceTab({ projectId }: { projectId: string }) {
                 />
               </div>
               <div>
-                <label className="text-[#94A3B8] text-xs uppercase tracking-wider font-medium block mb-1.5">Type</label>
-                <input value={fileType} onChange={e => setFileType(e.target.value)} className={inputClass} placeholder="e.g. Invoice, Contract, Budget" />
+                <label htmlFor="finance-file-type-input" className="text-[#94A3B8] text-xs uppercase tracking-wider font-medium block mb-1.5">Type</label>
+                <input id="finance-file-type-input" value={fileType} onChange={e => setFileType(e.target.value)} className={inputClass} placeholder="e.g. Invoice, Contract, Budget" />
               </div>
-              {uploadError && <p className="text-[#F87171] text-xs">Upload failed. Please try again.</p>}
+              {uploadError && <p role="alert" className="text-[#F87171] text-xs">Upload failed. Please try again.</p>}
             </div>
             <div className="flex gap-3 pt-2">
               <button type="button" onClick={closeUploadModal} className="flex-1 border border-[#1E3A5F] text-[#94A3B8] hover:text-white hover:border-white font-semibold py-2.5 rounded-lg transition-colors text-sm uppercase tracking-widest">Cancel</button>
@@ -400,6 +405,7 @@ export default function FinanceTab({ projectId }: { projectId: string }) {
                 value={searchQuery}
                 onChange={e => { setSearchQuery(e.target.value); setAddError('') }}
                 placeholder="Search by name or email..."
+                aria-label="Search people"
                 autoFocus
                 className={inputClass}
               />
@@ -408,7 +414,7 @@ export default function FinanceTab({ projectId }: { projectId: string }) {
               )}
             </div>
 
-            {addError && <p className="text-[#F87171] text-xs -mt-2">{addError}</p>}
+            {addError && <p role="alert" className="text-[#F87171] text-xs -mt-2">{addError}</p>}
 
             {/* Search results */}
             {searchResults.length > 0 && (
