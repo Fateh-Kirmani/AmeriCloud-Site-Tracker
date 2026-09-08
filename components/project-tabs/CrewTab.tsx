@@ -23,12 +23,13 @@ export default function CrewTab({ projectId }: { projectId: string }) {
   useEffect(() => {
     fetch(`/api/projects/${projectId}/crew`)
       .then((r) => r.json())
-      .then(({ crew_members }: { crew_members: Array<{ id: string; name: string | null; email: string | null; task: string | null; date_from: string | null; date_to: string | null }> }) => {
+      .then(({ crew_members }: { crew_members: Array<{ id: string; name: string | null; email: string | null; task: string | null; location: string | null; date_from: string | null; date_to: string | null }> }) => {
         setRows(crew_members.map((m) => ({
           id: m.id,
           name: m.name ?? '',
           email: m.email ?? '',
           task: m.task ?? '',
+          location: m.location ?? '',
           date_from: m.date_from ?? '',
           date_to: m.date_to ?? '',
         })))
@@ -38,7 +39,7 @@ export default function CrewTab({ projectId }: { projectId: string }) {
   }, [projectId])
 
   function addRow() {
-    setRows((r) => [...r, { name: '', email: '', task: '', date_from: '', date_to: '' }])
+    setRows((r) => [...r, { name: '', email: '', task: '', location: '', date_from: '', date_to: '' }])
   }
 
   function updateRow(index: number, field: keyof CrewMemberRow, value: string) {
@@ -91,11 +92,12 @@ export default function CrewTab({ projectId }: { projectId: string }) {
       })
       if (!res.ok) throw new Error()
       const { crew_members } = await res.json()
-      setRows(crew_members.map((m: { id: string; name: string | null; email: string | null; task: string | null; date_from: string | null; date_to: string | null }) => ({
+      setRows(crew_members.map((m: { id: string; name: string | null; email: string | null; task: string | null; location: string | null; date_from: string | null; date_to: string | null }) => ({
         id: m.id,
         name: m.name ?? '',
         email: m.email ?? '',
         task: m.task ?? '',
+        location: m.location ?? '',
         date_from: m.date_from ?? '',
         date_to: m.date_to ?? '',
       })))
