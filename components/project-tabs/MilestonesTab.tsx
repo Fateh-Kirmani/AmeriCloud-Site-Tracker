@@ -62,7 +62,6 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
 
   // Notes
   const [notes, setNotes] = useState<ProjectNote[]>([])
-  const [showAddNote, setShowAddNote] = useState(false)
   const [newNoteText, setNewNoteText] = useState('')
   const [savingNote, setSavingNote] = useState(false)
   const [deletingNote, setDeletingNote] = useState<string | null>(null)
@@ -320,7 +319,6 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
       const newNote: ProjectNote = await res.json()
       setNotes(n => [newNote, ...n])
       setNewNoteText('')
-      setShowAddNote(false)
     } catch {
       alert('Failed to save note. Please try again.')
     } finally {
@@ -403,7 +401,7 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
   if (fetchError) return <p className="text-[#F87171] text-sm">Failed to load. Please refresh.</p>
 
   return (
-    <div className="flex gap-5 items-start">
+    <div className="flex gap-5 items-start pb-24">
       {/* Left: milestone table */}
       <div className="flex-1 min-w-0 space-y-3">
         {rows.length === 0 && <p className="text-[#94A3B8] text-sm">No milestones added yet.</p>}
@@ -635,42 +633,16 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
           </div>
         )}
 
-        <div className="flex items-center justify-between pt-2">
+        <div className="pt-2">
           <button type="button" onClick={addRow} className="text-[#94A3B8] hover:text-white text-sm font-medium transition-colors">+ Add Milestone</button>
-          <div className="flex items-center gap-3">
-            {saveError && <p className="text-[#F87171] text-xs">Failed to save. Please try again.</p>}
-            <button
-              type="button"
-              onClick={() => setShowTemplateModal(true)}
-              disabled={rows.length === 0}
-              className="bg-[#F5C518] hover:bg-[#D4A800] disabled:opacity-40 disabled:cursor-not-allowed text-[#0B1929] font-semibold px-6 py-2.5 rounded-lg transition-colors text-sm uppercase tracking-widest"
-            >
-              Save As Template
-            </button>
-            <button
-              type="button"
-              onClick={save}
-              disabled={saving}
-              className="bg-[#C8102E] hover:bg-[#A50E25] disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold px-6 py-2.5 rounded-lg transition-colors text-sm uppercase tracking-widest"
-            >
-              {saving ? 'Saving...' : 'Save Changes'}
-            </button>
-          </div>
         </div>
       </div>
 
       {/* Right: Project Notes — fixed height, own scrollbar */}
       <div className="w-80 shrink-0">
         <div className="bg-[#112240] border border-[#1E3A5F] rounded-xl flex flex-col" style={{ height: 500 }}>
-          <div className="flex items-center justify-between px-3 py-3 border-b border-[#1E3A5F] shrink-0">
+          <div className="flex items-center px-3 py-3 border-b border-[#1E3A5F] shrink-0">
             <span className="text-[#94A3B8] text-xs uppercase tracking-wider font-medium">Project Notes</span>
-            <button
-              type="button"
-              onClick={() => { setNewNoteText(''); setShowAddNote(true) }}
-              className="text-xs bg-[#1E3A5F] hover:bg-[#334E6A] text-[#94A3B8] hover:text-white px-2 py-1 rounded transition-colors font-medium shrink-0"
-            >
-              + Add
-            </button>
           </div>
           <div className="flex-1 overflow-y-auto overflow-x-hidden">
             {notes.length === 0 && <p className="text-[#94A3B8] text-xs italic p-3">No notes yet.</p>}
@@ -741,40 +713,6 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
           </div>
         </div>
       </div>
-
-      {/* Add Note modal */}
-      {showAddNote && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-          <div className="bg-[#112240] border border-[#1E3A5F] rounded-xl p-6 w-full max-w-md mx-4 shadow-xl">
-            <h3 className="text-white font-semibold mb-4">Add Note</h3>
-            <textarea
-              value={newNoteText}
-              onChange={e => setNewNoteText(e.target.value)}
-              placeholder="Write your note..."
-              autoFocus
-              className={`${modalInput} resize-none`}
-              rows={6}
-            />
-            <div className="flex gap-3 mt-4">
-              <button
-                type="button"
-                onClick={() => setShowAddNote(false)}
-                className="flex-1 border border-[#1E3A5F] text-[#94A3B8] hover:text-white hover:border-white rounded-lg py-2.5 text-sm font-medium transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={saveNote}
-                disabled={savingNote || !newNoteText.trim()}
-                className="flex-1 bg-[#C8102E] hover:bg-[#A50E25] disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold py-2.5 rounded-lg text-sm transition-colors"
-              >
-                {savingNote ? 'Saving...' : 'Save Note'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Notes popup modal (milestone or task) */}
       {notesModal !== null && (
@@ -857,6 +795,60 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
           </div>
         </div>
       )}
+      {/* Sticky action bar */}
+      <div className="fixed bottom-0 left-0 right-0 z-40 bg-[#0B1929] border-t border-[#1E3A5F] shadow-[0_-4px_20px_rgba(0,0,0,0.5)]">
+        <div className="max-w-[1600px] mx-auto px-6 py-3 flex items-center gap-4">
+          {/* Quick note */}
+          <div className="flex-1 flex items-center gap-3 min-w-0">
+            <span className="text-[#94A3B8] text-xs uppercase tracking-wider font-medium whitespace-nowrap shrink-0 hidden sm:block">Quick Note</span>
+            <textarea
+              value={newNoteText}
+              onChange={e => {
+                setNewNoteText(e.target.value)
+                const el = e.target as HTMLTextAreaElement
+                el.style.height = 'auto'
+                el.style.height = `${Math.min(el.scrollHeight, 120)}px`
+              }}
+              onKeyDown={e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); saveNote() } }}
+              placeholder="Add a project note… (Ctrl+Enter to save)"
+              rows={1}
+              className="flex-1 bg-[#112240] border border-[#1E3A5F] rounded-md px-3 py-2 text-white text-sm placeholder-[#8899AA] focus:outline-none focus:ring-2 focus:ring-[#C8102E] focus:border-transparent transition-colors resize-none overflow-hidden"
+              style={{ minHeight: 36 }}
+            />
+            <button
+              type="button"
+              onClick={saveNote}
+              disabled={savingNote || !newNoteText.trim()}
+              className="shrink-0 bg-[#1E3A5F] hover:bg-[#2A4E70] disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold px-4 py-2 rounded-md transition-colors whitespace-nowrap"
+            >
+              {savingNote ? 'Adding…' : 'Add Note'}
+            </button>
+          </div>
+
+          <div className="w-px h-8 bg-[#1E3A5F] shrink-0" />
+
+          {/* Save actions */}
+          <div className="flex items-center gap-3 shrink-0">
+            {saveError && <p className="text-[#F87171] text-xs whitespace-nowrap">Failed to save. Try again.</p>}
+            <button
+              type="button"
+              onClick={() => setShowTemplateModal(true)}
+              disabled={rows.length === 0}
+              className="bg-[#F5C518] hover:bg-[#D4A800] disabled:opacity-40 disabled:cursor-not-allowed text-[#0B1929] font-semibold px-5 py-2 rounded-lg transition-colors text-sm uppercase tracking-widest whitespace-nowrap"
+            >
+              Save As Template
+            </button>
+            <button
+              type="button"
+              onClick={save}
+              disabled={saving}
+              className="bg-[#C8102E] hover:bg-[#A50E25] disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold px-6 py-2 rounded-lg transition-colors text-sm uppercase tracking-widest whitespace-nowrap"
+            >
+              {saving ? 'Saving…' : 'Save Changes'}
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
