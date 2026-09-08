@@ -732,7 +732,16 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
                               </button>
                             </>
                           ) : (
-                            <span className="text-[#94A3B8] text-xs italic" title="Notes are locked after 24 hours">Locked</span>
+                            <span
+                            aria-label="This note is locked — notes cannot be edited or deleted after 24 hours"
+                            className="flex items-center gap-1 text-[#94A3B8] text-xs"
+                          >
+                            <svg width="10" height="12" viewBox="0 0 10 12" fill="currentColor" aria-hidden="true">
+                              <rect x="1" y="5" width="8" height="7" rx="1.5" />
+                              <path d="M3 5V3.5a2 2 0 014 0V5" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                            </svg>
+                            Locked after 24h
+                          </span>
                           )}
                         </div>
                       )}
