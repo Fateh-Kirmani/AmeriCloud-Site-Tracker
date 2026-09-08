@@ -409,7 +409,7 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
   if (fetchError) return <p className="text-[#F87171] text-sm">Failed to load. Please refresh.</p>
 
   return (
-    <div className="flex gap-5 items-start pb-24">
+    <div className="flex flex-col md:flex-row gap-5 items-start pb-24">
       {toast && <Toast message={toast.message} type={toast.type} onDismiss={() => setToast(null)} />}
       {/* Left: milestone table */}
       <div className="flex-1 min-w-0 space-y-3">
@@ -663,7 +663,7 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
       </div>
 
       {/* Right: Project Notes — fixed height, own scrollbar */}
-      <div className="w-80 shrink-0">
+      <div className="w-full md:w-80 shrink-0">
         <div className="bg-[#112240] border border-[#1E3A5F] rounded-xl flex flex-col" style={{ height: 500 }}>
           <div className="flex items-center px-3 py-3 border-b border-[#1E3A5F] shrink-0">
             <span className="text-[#94A3B8] text-xs uppercase tracking-wider font-medium">Project Notes</span>

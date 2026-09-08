@@ -154,6 +154,8 @@ export default function TaskSchedulerTab({ projectId }: { projectId: string }) {
   return (
     <div className="space-y-3">
       {rows.length === 0 && <p className="text-[#94A3B8] text-sm">No tasks scheduled yet.</p>}
+      <div className="overflow-x-auto">
+        <div style={{ minWidth: 900 }} className="space-y-2">
       {rows.length > 0 && (
         <div className="flex gap-2 items-center px-1">
           <span className="flex-1 text-[#94A3B8] text-xs uppercase tracking-wider font-medium">Field Engineer Name</span>
@@ -200,6 +202,8 @@ export default function TaskSchedulerTab({ projectId }: { projectId: string }) {
           </div>
         )
       })}
+        </div>
+      </div>
       {showUndo && (
         <div className="flex items-center justify-between bg-[#1E3A5F] rounded-lg px-4 py-2 text-sm">
           <span className="text-[#94A3B8]">Scheduled task deleted.</span>
