@@ -28,7 +28,7 @@ export async function GET(
     }
 
     const milestoneIds = (data ?? []).map(m => m.id)
-    let tasksMap: Record<string, { id: string; task: string; sort_order: number }[]> = {}
+    let tasksMap: Record<string, { id: string; task: string; sort_order: number; projected_date: string | null; actual_date: string | null; status: string | null; notes: string | null; owner: string | null; owner_email: string | null }[]> = {}
     if (milestoneIds.length > 0) {
       const { data: tasks } = await supabase
         .from('milestone_tasks')
@@ -37,7 +37,7 @@ export async function GET(
         .order('sort_order')
       for (const t of tasks ?? []) {
         if (!tasksMap[t.milestone_id]) tasksMap[t.milestone_id] = []
-        tasksMap[t.milestone_id].push({ id: t.id, task: t.task, sort_order: t.sort_order })
+        tasksMap[t.milestone_id].push({ id: t.id, task: t.task, sort_order: t.sort_order, projected_date: t.projected_date ?? null, actual_date: t.actual_date ?? null, status: t.status ?? null, notes: t.notes ?? null, owner: t.owner ?? null, owner_email: t.owner_email ?? null })
       }
     }
     const enriched = (data ?? []).map(m => ({ ...m, tasks: tasksMap[m.id] ?? [] }))
@@ -220,7 +220,7 @@ export async function PUT(
 
     // Enrich with tasks
     const milestoneIds = (allMilestones ?? []).map(m => m.id)
-    let tasksMap: Record<string, { id: string; task: string; sort_order: number }[]> = {}
+    let tasksMap: Record<string, { id: string; task: string; sort_order: number; projected_date: string | null; actual_date: string | null; status: string | null; notes: string | null; owner: string | null; owner_email: string | null }[]> = {}
     if (milestoneIds.length > 0) {
       const { data: tasks } = await supabase
         .from('milestone_tasks')
@@ -229,7 +229,7 @@ export async function PUT(
         .order('sort_order')
       for (const t of tasks ?? []) {
         if (!tasksMap[t.milestone_id]) tasksMap[t.milestone_id] = []
-        tasksMap[t.milestone_id].push({ id: t.id, task: t.task, sort_order: t.sort_order })
+        tasksMap[t.milestone_id].push({ id: t.id, task: t.task, sort_order: t.sort_order, projected_date: t.projected_date ?? null, actual_date: t.actual_date ?? null, status: t.status ?? null, notes: t.notes ?? null, owner: t.owner ?? null, owner_email: t.owner_email ?? null })
       }
     }
     const enriched = (allMilestones ?? []).map(m => ({ ...m, tasks: tasksMap[m.id] ?? [] }))

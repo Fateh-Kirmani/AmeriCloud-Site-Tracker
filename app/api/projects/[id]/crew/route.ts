@@ -61,7 +61,7 @@ export async function PUT(
 
     const { data: currentCrew } = await supabase
       .from('crew_members')
-      .select('id, name, email, task, date_from, date_to')
+      .select('id, name, email, task, location, date_from, date_to')
       .eq('project_id', id)
     const currentCrewMap = new Map((currentCrew ?? []).map(m => [m.id, m]))
 
@@ -80,6 +80,7 @@ export async function PUT(
         name: (m.name as string) || null,
         email: (m.email as string) || null,
         task: (m.task as string) || null,
+        location: (m.location as string) || null,
         date_from: (m.date_from as string) || null,
         date_to: (m.date_to as string) || null,
         sort_order: (m.sort_order as number) ?? i,

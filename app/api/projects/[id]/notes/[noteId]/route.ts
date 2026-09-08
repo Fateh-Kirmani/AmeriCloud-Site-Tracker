@@ -24,13 +24,16 @@ export async function PATCH(
     const supabase = createSupabaseClient()
     const { data: note } = await supabase
       .from('project_notes')
-      .select('id, author_email')
+      .select('id, author_email, created_at')
       .eq('id', noteId)
       .eq('project_id', id)
       .maybeSingle()
     if (!note) return NextResponse.json({ error: 'Note not found' }, { status: 404 })
     if (note.author_email !== session.user.email) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+    if (Date.now() - new Date(note.created_at).getTime() > 24 * 60 * 60 * 1000) {
+      return NextResponse.json({ error: 'Note is locked after 24 hours' }, { status: 403 })
     }
     const { data, error } = await supabase
       .from('project_notes')
@@ -58,13 +61,16 @@ export async function DELETE(
     const supabase = createSupabaseClient()
     const { data: note } = await supabase
       .from('project_notes')
-      .select('id, author_email')
+      .select('id, author_email, created_at')
       .eq('id', noteId)
       .eq('project_id', id)
       .maybeSingle()
     if (!note) return NextResponse.json({ error: 'Note not found' }, { status: 404 })
     if (note.author_email !== session.user.email) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+    if (Date.now() - new Date(note.created_at).getTime() > 24 * 60 * 60 * 1000) {
+      return NextResponse.json({ error: 'Note is locked after 24 hours' }, { status: 403 })
     }
     const { error } = await supabase.from('project_notes').delete().eq('id', noteId)
     if (error) return NextResponse.json({ error: 'Database error' }, { status: 500 })

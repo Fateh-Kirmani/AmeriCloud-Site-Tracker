@@ -18,6 +18,8 @@ export type MilestoneTask = {
   actual_date?: string | null
   status?: string | null
   notes?: string | null
+  owner?: string | null
+  owner_email?: string | null
 }
 
 export type ProjectNote = {
@@ -71,6 +73,7 @@ export type CrewMemberRow = {
   name: string
   email: string
   task: string
+  location: string
   date_from: string
   date_to: string
 }

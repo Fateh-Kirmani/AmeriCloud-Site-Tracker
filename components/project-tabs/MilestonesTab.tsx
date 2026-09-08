@@ -534,9 +534,11 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
                               return (
                                 <>
                                   {taskList.length > 0 && (
-                                    <div className="grid text-[#94A3B8] text-xs uppercase tracking-wider mb-1 gap-2" style={{ gridTemplateColumns: '20px 1fr 120px 120px 110px 64px 28px' }}>
+                                    <div className="grid text-[#94A3B8] text-xs uppercase tracking-wider mb-1 gap-2" style={{ gridTemplateColumns: '20px 1fr 140px 160px 120px 120px 110px 64px 28px' }}>
                                       <span />
                                       <span>Task</span>
+                                      <span>Owner</span>
+                                      <span>Owner Email</span>
                                       <span>Projected</span>
                                       <span>Actual</span>
                                       <span>Status</span>
@@ -549,13 +551,26 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
                                   )}
                                   <div className="space-y-2">
                                     {taskList.map((t, ti) => (
-                                      <div key={ti} className="grid gap-2 items-center" style={{ gridTemplateColumns: '20px 1fr 120px 120px 110px 64px 28px' }}>
+                                      <div key={ti} className="grid gap-2 items-center" style={{ gridTemplateColumns: '20px 1fr 140px 160px 120px 120px 110px 64px 28px' }}>
                                         <span className="text-[#94A3B8] text-xs text-right">{ti + 1}.</span>
                                         <input
                                           value={t.task}
                                           onChange={e => setEditingTasks(prev => ({ ...prev, [i]: (prev[i] ?? []).map((x, xi) => xi === ti ? { ...x, task: e.target.value } : x) }))}
                                           className={modalInput}
                                           placeholder="Specify task..."
+                                        />
+                                        <SearchableCombobox
+                                          value={t.owner ?? ''}
+                                          onSelect={(name, email) => setEditingTasks(prev => ({ ...prev, [i]: (prev[i] ?? []).map((x, xi) => xi === ti ? { ...x, owner: name, owner_email: email ?? '' } : x) }))}
+                                          fetchOptions={fetchGraphUsers}
+                                          placeholder="Search name..."
+                                          inputClassName={modalInput}
+                                        />
+                                        <input
+                                          value={t.owner_email ?? ''}
+                                          readOnly
+                                          className={cellReadonly}
+                                          placeholder="Auto-filled"
                                         />
                                         <input
                                           type="date"
@@ -598,7 +613,7 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
                                   <div className="flex items-center justify-between mt-3">
                                     <button
                                       type="button"
-                                      onClick={() => setEditingTasks(prev => ({ ...prev, [i]: [...(prev[i] ?? []), { task: '', projected_date: '', actual_date: '', status: 'Active', notes: '' }] }))}
+                                      onClick={() => setEditingTasks(prev => ({ ...prev, [i]: [...(prev[i] ?? []), { task: '', owner: '', owner_email: '', projected_date: '', actual_date: '', status: 'Active', notes: '' }] }))}
                                       className="text-[#94A3B8] hover:text-white text-xs transition-colors"
                                     >
                                       + Add Task
@@ -648,6 +663,7 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
             {notes.length === 0 && <p className="text-[#94A3B8] text-xs italic p-3">No notes yet.</p>}
             {notes.map((note, idx) => {
               const isOwner = !!session?.user?.email && note.author_email === session.user.email
+              const isEditable = isOwner && (Date.now() - new Date(note.created_at).getTime() < 24 * 60 * 60 * 1000)
               const authorLabel = note.author_name ?? note.author_email?.split('@')[0] ?? null
               return (
                 <div key={note.id}>
@@ -686,23 +702,29 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
                       </p>
                       {isOwner && editingNoteId !== note.id && (
                         <div className="flex items-center gap-1.5 shrink-0">
-                          <button
-                            type="button"
-                            onClick={() => startEdit(note)}
-                            aria-label="Edit note"
-                            className="text-[#94A3B8] hover:text-white transition-colors"
-                          >
-                            <PencilIcon />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => deleteNote(note.id)}
-                            disabled={deletingNote === note.id}
-                            aria-label="Delete note"
-                            className="text-[#94A3B8] hover:text-[#C8102E] disabled:opacity-40 transition-colors"
-                          >
-                            <TrashIcon />
-                          </button>
+                          {isEditable ? (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => startEdit(note)}
+                                aria-label="Edit note"
+                                className="text-[#94A3B8] hover:text-white transition-colors"
+                              >
+                                <PencilIcon />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => deleteNote(note.id)}
+                                disabled={deletingNote === note.id}
+                                aria-label="Delete note"
+                                className="text-[#94A3B8] hover:text-[#C8102E] disabled:opacity-40 transition-colors"
+                              >
+                                <TrashIcon />
+                              </button>
+                            </>
+                          ) : (
+                            <span className="text-[#94A3B8] text-xs italic" title="Notes are locked after 24 hours">Locked</span>
+                          )}
                         </div>
                       )}
                     </div>

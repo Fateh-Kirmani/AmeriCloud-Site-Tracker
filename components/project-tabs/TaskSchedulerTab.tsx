@@ -55,11 +55,12 @@ export default function TaskSchedulerTab({ projectId }: { projectId: string }) {
         }))
         setMilestones(ms)
 
-        setRows((crewData.crew_members ?? []).map((m: { id: string; name: string | null; email: string | null; task: string | null; date_from: string | null; date_to: string | null }) => ({
+        setRows((crewData.crew_members ?? []).map((m: { id: string; name: string | null; email: string | null; task: string | null; location: string | null; date_from: string | null; date_to: string | null }) => ({
           id: m.id,
           name: m.name ?? '',
           email: m.email ?? '',
           task: m.task ?? '',
+          location: m.location ?? '',
           date_from: m.date_from ?? '',
           date_to: m.date_to ?? '',
           selected_milestone_id: '',
@@ -74,7 +75,7 @@ export default function TaskSchedulerTab({ projectId }: { projectId: string }) {
   }, [projectId])
 
   function addRow() {
-    setRows(r => [...r, { name: '', email: '', task: '', date_from: '', date_to: '', selected_milestone_id: '' }])
+    setRows(r => [...r, { name: '', email: '', task: '', location: '', date_from: '', date_to: '', selected_milestone_id: '' }])
   }
 
   function updateEngineer(index: number, name: string) {
@@ -139,9 +140,9 @@ export default function TaskSchedulerTab({ projectId }: { projectId: string }) {
       })
       if (!res.ok) throw new Error()
       const { crew_members } = await res.json()
-      setRows(crew_members.map((m: { id: string; name: string | null; email: string | null; task: string | null; date_from: string | null; date_to: string | null }) => ({
+      setRows(crew_members.map((m: { id: string; name: string | null; email: string | null; task: string | null; location: string | null; date_from: string | null; date_to: string | null }) => ({
         id: m.id, name: m.name ?? '', email: m.email ?? '',
-        task: m.task ?? '', date_from: m.date_from ?? '', date_to: m.date_to ?? '',
+        task: m.task ?? '', location: m.location ?? '', date_from: m.date_from ?? '', date_to: m.date_to ?? '',
         selected_milestone_id: '',
       })))
       setDeletedIds([])
@@ -164,6 +165,7 @@ export default function TaskSchedulerTab({ projectId }: { projectId: string }) {
           <span className="flex-1 text-[#94A3B8] text-xs uppercase tracking-wider font-medium">Email</span>
           <span className="flex-1 text-[#94A3B8] text-xs uppercase tracking-wider font-medium">Milestone</span>
           <span className="flex-1 text-[#94A3B8] text-xs uppercase tracking-wider font-medium">Select Task</span>
+          <span className="flex-1 text-[#94A3B8] text-xs uppercase tracking-wider font-medium">Location</span>
           <span className="flex-1 text-[#94A3B8] text-xs uppercase tracking-wider font-medium">Date From</span>
           <span className="flex-1 text-[#94A3B8] text-xs uppercase tracking-wider font-medium">Date To</span>
           <span className="w-4 shrink-0" />
@@ -194,6 +196,7 @@ export default function TaskSchedulerTab({ projectId }: { projectId: string }) {
               <option value="">{row.selected_milestone_id ? (availableTasks.length === 0 ? 'No tasks available' : 'Select task...') : 'Select milestone first'}</option>
               {availableTasks.map(t => <option key={t.id} value={t.task}>{t.task}</option>)}
             </select>
+            <input value={row.location} onChange={e => updateRow(i, 'location', e.target.value)} className={`${inputClass} flex-1`} placeholder="Location..." />
             <input type="date" value={row.date_from} onChange={e => updateRow(i, 'date_from', e.target.value)} className={`${inputClass} flex-1`} />
             <input type="date" value={row.date_to} onChange={e => updateRow(i, 'date_to', e.target.value)} className={`${inputClass} flex-1`} />
             <button type="button" onClick={() => deleteRow(i)} aria-label="Delete scheduled task" className="text-[#94A3B8] hover:text-[#C8102E] transition-colors shrink-0">
