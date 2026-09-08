@@ -78,11 +78,6 @@ export default function TaskSchedulerTab({ projectId }: { projectId: string }) {
     setRows(r => [...r, { name: '', email: '', task: '', location: '', date_from: '', date_to: '', selected_milestone_id: '' }])
   }
 
-  function updateEngineer(index: number, name: string) {
-    const eng = FIELD_ENGINEERS.find(e => e.name === name)
-    setRows(r => r.map((row, i) => i === index ? { ...row, name, email: eng?.email ?? '' } : row))
-  }
-
   function updateMilestone(index: number, milestoneId: string) {
     setRows(r => r.map((row, i) => i === index ? { ...row, selected_milestone_id: milestoneId, task: '' } : row))
   }
@@ -134,7 +129,7 @@ export default function TaskSchedulerTab({ projectId }: { projectId: string }) {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          crew_members: rows.map((r, i) => ({ ...r, sort_order: i })),
+          crew_members: rows.map(({ selected_milestone_id: _, ...r }, i) => ({ ...r, sort_order: i })),
           deleted_ids: [...deletedIds, ...extraIds],
         }),
       })

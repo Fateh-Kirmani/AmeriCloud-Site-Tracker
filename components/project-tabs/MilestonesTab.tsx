@@ -4,6 +4,9 @@ import { useSession } from 'next-auth/react'
 import TrashIcon from '@/components/icons/TrashIcon'
 import { MilestoneRow, MilestoneTask, ProjectNote } from '@/types/milestone'
 import SearchableCombobox, { ComboboxOption } from '@/components/SearchableCombobox'
+import Toast from '@/components/Toast'
+
+type RowWithKey = MilestoneRow & { _key: string }
 
 async function fetchGraphUsers(q: string): Promise<ComboboxOption[]> {
   const res = await fetch(`/api/graph/users?q=${encodeURIComponent(q)}`)
@@ -43,7 +46,8 @@ function getProjectedDateStyle(projected: string, actualized: string): React.CSS
 
 export default function MilestonesTab({ projectId, projectTemplate, templates }: Props) {
   const { data: session } = useSession()
-  const [rows, setRows] = useState<MilestoneRow[]>([])
+  const [rows, setRows] = useState<RowWithKey[]>([])
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
   const [deletedIds, setDeletedIds] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -100,6 +104,7 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
             const preFilled = tmpl.items
               .sort((a, b) => a.sort_order - b.sort_order)
               .map(item => ({
+                _key: crypto.randomUUID(),
                 details: item.details ?? '',
                 owner: '',
                 owner_email: '',
@@ -137,6 +142,7 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
                 const reloadRes = await fetch(`/api/projects/${projectId}/milestones`)
                 const reloaded = await reloadRes.json()
                 const reloadedRows = (reloaded.milestones ?? []).map((m: typeof milestones[0]) => ({
+                  _key: m.id,
                   id: m.id, details: m.details ?? '', owner: m.owner ?? '',
                   owner_email: m.owner_email ?? '',
                   projected_date: m.projected_date ?? '', actualized_date: m.actualized_date ?? '',
@@ -154,6 +160,7 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
         }
 
         const loadedRows = milestones.map(m => ({
+          _key: m.id,
           id: m.id,
           details: m.details ?? '',
           owner: m.owner ?? '',
@@ -180,7 +187,7 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
 
   function addRow() {
     const newIndex = rows.length
-    setRows(r => [...r, { details: '', owner: '', owner_email: '', projected_date: '', actualized_date: '', notes: '', status: 'Active', tasks: [] }])
+    setRows(r => [...r, { _key: crypto.randomUUID(), details: '', owner: '', owner_email: '', projected_date: '', actualized_date: '', notes: '', status: 'Active', tasks: [] }])
     setExpandedIndices(prev => new Set([...prev, newIndex]))
     setEditingTasks(prev => ({ ...prev, [newIndex]: [{ task: '' }] }))
   }
@@ -248,7 +255,7 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
   async function saveExpandedTasks(rowIndex: number) {
     const row = rows[rowIndex]
     if (!row.id) {
-      alert('Please save the milestone first before adding tasks.')
+      setToast({ message: 'Please save the milestone first before adding tasks.', type: 'error' })
       return
     }
     const tasks = editingTasks[rowIndex] ?? []
@@ -264,7 +271,7 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
       setRows(r => r.map((r2, i) => i === rowIndex ? { ...r2, tasks: savedTasks ?? [] } : r2))
       setEditingTasks(prev => ({ ...prev, [rowIndex]: savedTasks ?? [] }))
     } catch {
-      alert('Failed to save tasks. Please try again.')
+      setToast({ message: 'Failed to save tasks. Please try again.', type: 'error' })
     } finally {
       setSavingTasks(prev => { const next = new Set(prev); next.delete(rowIndex); return next })
     }
@@ -286,13 +293,14 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          milestones: rows.map((r, i) => ({ ...r, sort_order: i })),
+          milestones: rows.map(({ _key: _, ...r }, i) => ({ ...r, sort_order: i })),
           deleted_ids: [...deletedIds, ...extraIds],
         }),
       })
       if (!res.ok) throw new Error()
       const { milestones: saved } = await res.json()
       setRows(saved.map((m: MilestoneRow & { tasks: MilestoneTask[] }) => ({
+        _key: m.id,
         id: m.id, details: m.details ?? '', owner: m.owner ?? '',
         owner_email: m.owner_email ?? '',
         projected_date: m.projected_date ?? '', actualized_date: m.actualized_date ?? '',
@@ -320,7 +328,7 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
       setNotes(n => [newNote, ...n])
       setNewNoteText('')
     } catch {
-      alert('Failed to save note. Please try again.')
+      setToast({ message: 'Failed to save note. Please try again.', type: 'error' })
     } finally {
       setSavingNote(false)
     }
@@ -333,7 +341,7 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
       if (!res.ok) throw new Error()
       setNotes(n => n.filter(x => x.id !== noteId))
     } catch {
-      alert('Failed to delete note. Please try again.')
+      setToast({ message: 'Failed to delete note. Please try again.', type: 'error' })
     } finally {
       setDeletingNote(null)
     }
@@ -363,7 +371,7 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
       setNotes(n => n.map(x => x.id === noteId ? updated : x))
       cancelEdit()
     } catch {
-      alert('Failed to save changes. Please try again.')
+      setToast({ message: 'Failed to save changes. Please try again.', type: 'error' })
     } finally {
       setSavingEdit(false)
     }
@@ -402,13 +410,14 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
 
   return (
     <div className="flex gap-5 items-start pb-24">
+      {toast && <Toast message={toast.message} type={toast.type} onDismiss={() => setToast(null)} />}
       {/* Left: milestone table */}
       <div className="flex-1 min-w-0 space-y-3">
         {rows.length === 0 && <p className="text-[#94A3B8] text-sm">No milestones added yet.</p>}
 
         {rows.length > 0 && (
           <div className="overflow-x-auto">
-            <table className="w-full" style={{ tableLayout: 'auto', minWidth: 680 }}>
+            <table aria-label="Project Milestones" className="w-full" style={{ tableLayout: 'auto', minWidth: 680 }}>
               <colgroup>
                 <col style={{ width: 24 }} />   {/* drag */}
                 <col style={{ width: 28 }} />   {/* chevron */}
@@ -437,7 +446,7 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
               </thead>
               <tbody>
                 {rows.map((row, i) => (
-                  <Fragment key={i}>
+                  <Fragment key={row._key}>
                     <tr
                       draggable
                       onDragStart={() => setDragIndex(i)}
@@ -454,7 +463,7 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
                       onDragEnd={() => setDragIndex(null)}
                     >
                       <td className="py-1 pr-1 align-middle">
-                        <button type="button" className="cursor-grab text-[#94A3B8] hover:text-white" draggable={false}>
+                        <button type="button" aria-label="Drag to reorder" className="cursor-grab text-[#94A3B8] hover:text-white" draggable={false}>
                           <svg width="10" height="14" viewBox="0 0 10 14" fill="currentColor">
                             <circle cx="2" cy="2" r="1.5"/><circle cx="8" cy="2" r="1.5"/>
                             <circle cx="2" cy="7" r="1.5"/><circle cx="8" cy="7" r="1.5"/>
@@ -832,6 +841,7 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
                 el.style.height = `${Math.min(el.scrollHeight, 120)}px`
               }}
               onKeyDown={e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); saveNote() } }}
+              aria-label="Quick note"
               placeholder="Add a project note… (Ctrl+Enter to save)"
               rows={1}
               className="flex-1 bg-[#112240] border border-[#1E3A5F] rounded-md px-3 py-2 text-white text-sm placeholder-[#8899AA] focus:outline-none focus:ring-2 focus:ring-[#C8102E] focus:border-transparent transition-colors resize-none overflow-hidden"
@@ -851,7 +861,7 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
 
           {/* Save actions */}
           <div className="flex items-center gap-3 shrink-0">
-            {saveError && <p className="text-[#F87171] text-xs whitespace-nowrap">Failed to save. Try again.</p>}
+            {saveError && <p role="alert" className="text-[#F87171] text-xs whitespace-nowrap">Failed to save. Try again.</p>}
             <button
               type="button"
               onClick={() => setShowTemplateModal(true)}
