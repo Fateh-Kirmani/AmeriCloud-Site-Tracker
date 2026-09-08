@@ -79,7 +79,7 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
   const [savingTemplate, setSavingTemplate] = useState(false)
   const [templateSaveError, setTemplateSaveError] = useState('')
 
-  const pendingDeleteRef = useRef<{ row: MilestoneRow; index: number } | null>(null)
+  const pendingDeleteRef = useRef<{ row: RowWithKey; index: number } | null>(null)
   const pendingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
