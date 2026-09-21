@@ -73,6 +73,51 @@ export async function PUT(
       }
     }
 
+    // Conflict check — cross-project availability
+    const rowsWithDates = (crew_members as Record<string, unknown>[]).filter(
+      m => m.email && m.date_from && m.date_to
+    )
+    if (rowsWithDates.length > 0) {
+      const idsBeingReplaced = [
+        ...(deleted_ids as string[]),
+        ...(crew_members as Record<string, unknown>[]).map(m => m.id as string).filter(Boolean),
+      ]
+      for (const row of rowsWithDates) {
+        const email = (row.email as string).toLowerCase()
+        const dateFrom = row.date_from as string
+        const dateTo = row.date_to as string
+
+        const { data: potentialConflicts } = await supabase
+          .from('crew_members')
+          .select('id, task, date_from, date_to, project_id')
+          .ilike('email', email)
+          .not('date_from', 'is', null)
+          .not('date_to', 'is', null)
+          .lte('date_from', dateTo)
+          .gte('date_to', dateFrom)
+
+        const conflicts = (potentialConflicts ?? []).filter(c => !idsBeingReplaced.includes(c.id))
+        if (conflicts.length > 0) {
+          const conflictProjectIds = [...new Set(conflicts.map(c => c.project_id))]
+          const { data: conflictProjects } = await supabase
+            .from('projects')
+            .select('id, site_name')
+            .in('id', conflictProjectIds)
+          const conflictProjectMap = Object.fromEntries((conflictProjects ?? []).map(p => [p.id, p.site_name]))
+          return NextResponse.json({
+            error: 'Schedule conflict',
+            conflicts: conflicts.map(c => ({
+              engineer: (row.name as string) || email,
+              conflicting_project: conflictProjectMap[c.project_id] ?? 'another project',
+              conflicting_task: c.task ?? '—',
+              date_from: c.date_from,
+              date_to: c.date_to,
+            })),
+          }, { status: 409 })
+        }
+      }
+    }
+
     if (crew_members.length > 0) {
       const rows = (crew_members as Record<string, unknown>[]).map((m, i) => ({
         ...(m.id ? { id: m.id } : {}),

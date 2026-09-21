@@ -11,10 +11,11 @@ import MilestonesTab from '@/components/project-tabs/MilestonesTab'
 import FilesTab from '@/components/project-tabs/FilesTab'
 import TaskSchedulerTab from '@/components/project-tabs/TaskSchedulerTab'
 import FinanceTab from '@/components/project-tabs/FinanceTab'
+import CalendarTab from '@/components/project-tabs/CalendarTab'
 import ClientSelect from '@/components/forms/ClientSelect'
 import { generateProjectCode } from '@/lib/clients'
 
-const TABS = ['General Information', 'Milestones', 'Task Scheduler', 'Files', 'Finance'] as const
+const TABS = ['General Information', 'Milestones', 'Task Scheduler', 'Files', 'Finance', 'Calendar'] as const
 type Tab = (typeof TABS)[number]
 
 
@@ -299,6 +300,13 @@ export default function EditProjectForm({
       {activeTab === 'Finance' && (
         <div role="tabpanel" id="tabpanel-finance" aria-labelledby="tab-finance">
           <FinanceTab projectId={project.id} />
+        </div>
+      )}
+
+      {/* Calendar tab */}
+      {activeTab === 'Calendar' && (
+        <div role="tabpanel" id="tabpanel-calendar" aria-labelledby="tab-calendar">
+          <CalendarTab projectId={project.id} />
         </div>
       )}
     </>

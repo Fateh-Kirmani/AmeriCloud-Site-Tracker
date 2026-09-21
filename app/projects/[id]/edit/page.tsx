@@ -4,7 +4,7 @@ import EditProjectForm from '@/components/forms/EditProjectForm'
 import ImportToBomButton from '@/components/forms/ImportToBomButton'
 import { Project } from '@/types/project'
 
-const VALID_TABS = ['General Information', 'Milestones', 'Task Scheduler', 'Files', 'Finance'] as const
+const VALID_TABS = ['General Information', 'Milestones', 'Task Scheduler', 'Files', 'Finance', 'Calendar'] as const
 type Tab = typeof VALID_TABS[number]
 
 export default async function EditProjectPage({

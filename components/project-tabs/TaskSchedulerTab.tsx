@@ -23,6 +23,7 @@ export default function TaskSchedulerTab({ projectId }: { projectId: string }) {
   const [saving, setSaving] = useState(false)
   const [fetchError, setFetchError] = useState(false)
   const [saveError, setSaveError] = useState(false)
+  const [conflictError, setConflictError] = useState<string | null>(null)
   const [showUndo, setShowUndo] = useState(false)
   const pendingDeleteRef = useRef<{ row: ScheduledRow; index: number } | null>(null)
   const pendingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -117,6 +118,7 @@ export default function TaskSchedulerTab({ projectId }: { projectId: string }) {
     }
     setSaving(true)
     setSaveError(false)
+    setConflictError(null)
     try {
       const res = await fetch(`/api/projects/${projectId}/crew`, {
         method: 'PUT',
@@ -126,6 +128,14 @@ export default function TaskSchedulerTab({ projectId }: { projectId: string }) {
           deleted_ids: [...deletedIds, ...extraIds],
         }),
       })
+      if (res.status === 409) {
+        const body = await res.json()
+        const first = (body.conflicts as { engineer: string; conflicting_project: string; date_from: string; date_to: string }[])?.[0]
+        setConflictError(first
+          ? `${first.engineer} is already scheduled on "${first.conflicting_project}" (${first.date_from} – ${first.date_to}). Resolve the conflict before saving.`
+          : 'Schedule conflict detected. Check engineer availability and try again.')
+        return
+      }
       if (!res.ok) throw new Error()
       const { crew_members } = await res.json()
       setRows(crew_members.map((m: { id: string; name: string | null; email: string | null; task: string | null; location: string | null; date_from: string | null; date_to: string | null }) => ({
@@ -206,6 +216,7 @@ export default function TaskSchedulerTab({ projectId }: { projectId: string }) {
       <div className="flex items-center justify-between pt-2">
         <button type="button" onClick={addRow} className="text-[#94A3B8] hover:text-white text-sm font-medium transition-colors">Schedule A New Task</button>
         <div className="flex flex-col items-end gap-1">
+          {conflictError && <p role="alert" className="text-[#F87171] text-xs text-right max-w-sm">{conflictError}</p>}
           {saveError && <p role="alert" className="text-[#F87171] text-xs">Failed to save. Please try again.</p>}
           <button type="button" onClick={save} disabled={saving} className="bg-[#C8102E] hover:bg-[#A50E25] disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold px-6 py-2.5 rounded-lg transition-colors text-sm uppercase tracking-widest">
             {saving ? 'Saving...' : 'Save Changes'}
