@@ -34,7 +34,11 @@ export default function LoginPage() {
 
         <button
           type="button"
-          onClick={() => signIn('microsoft', { callbackUrl: '/' })}
+          onClick={() => {
+            const params = new URLSearchParams(window.location.search)
+            const dest = params.get('callbackUrl') ?? '/'
+            signIn('microsoft', { callbackUrl: dest })
+          }}
           className="w-full flex items-center justify-center gap-3 bg-[#1E3A5F] hover:bg-[#2A4F7A] text-white font-semibold py-3.5 rounded-xl transition-colors text-sm"
         >
           <MicrosoftLogo />

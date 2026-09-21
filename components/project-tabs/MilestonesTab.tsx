@@ -268,8 +268,15 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
       })
       if (!res.ok) throw new Error()
       const { tasks: savedTasks } = await res.json()
-      setRows(r => r.map((r2, i) => i === rowIndex ? { ...r2, tasks: savedTasks ?? [] } : r2))
+      const allCompleted = (savedTasks as MilestoneTask[]).length > 0 &&
+        (savedTasks as MilestoneTask[]).every(t => t.status === 'Completed')
+      setRows(r => r.map((r2, i) => i === rowIndex
+        ? { ...r2, tasks: savedTasks ?? [], ...(allCompleted ? { status: 'Completed' } : {}) }
+        : r2))
       setEditingTasks(prev => ({ ...prev, [rowIndex]: savedTasks ?? [] }))
+      if (allCompleted) {
+        setToast({ message: 'All tasks completed — milestone status updated to Completed. Save Changes to persist.', type: 'success' })
+      }
     } catch {
       setToast({ message: 'Failed to save tasks. Please try again.', type: 'error' })
     } finally {
@@ -417,17 +424,17 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
 
         {rows.length > 0 && (
           <div className="overflow-x-auto">
-            <table aria-label="Project Milestones" className="w-full" style={{ tableLayout: 'auto', minWidth: 680 }}>
+            <table aria-label="Project Milestones" className="w-full" style={{ tableLayout: 'fixed', minWidth: 1130 }}>
               <colgroup>
                 <col style={{ width: 24 }} />   {/* drag */}
                 <col style={{ width: 28 }} />   {/* chevron */}
-                <col />                          {/* details — grows */}
+                <col style={{ width: 220 }} />  {/* details */}
                 <col style={{ width: 148 }} />  {/* owner */}
                 <col style={{ width: 172 }} />  {/* owner email */}
                 <col style={{ width: 120 }} />  {/* projected */}
                 <col style={{ width: 120 }} />  {/* actual */}
                 <col style={{ width: 130 }} />  {/* status */}
-                <col />                          {/* milestone notes — grows */}
+                <col style={{ width: 140 }} />  {/* milestone notes */}
                 <col style={{ width: 24 }} />   {/* delete */}
               </colgroup>
               <thead>
@@ -663,7 +670,7 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
       </div>
 
       {/* Right: Project Notes — fixed height, own scrollbar */}
-      <div className="w-full md:w-80 shrink-0">
+      <div className="w-full md:w-60 shrink-0">
         <div className="bg-[#112240] border border-[#1E3A5F] rounded-xl flex flex-col" style={{ height: 500 }}>
           <div className="flex items-center px-3 py-3 border-b border-[#1E3A5F] shrink-0">
             <span className="text-[#94A3B8] text-xs uppercase tracking-wider font-medium">Project Notes</span>
