@@ -13,7 +13,48 @@ import TaskSchedulerTab from '@/components/project-tabs/TaskSchedulerTab'
 import FinanceTab from '@/components/project-tabs/FinanceTab'
 import CalendarTab from '@/components/project-tabs/CalendarTab'
 import ClientSelect from '@/components/forms/ClientSelect'
+import SearchableCombobox, { ComboboxOption } from '@/components/SearchableCombobox'
 import { generateProjectCode } from '@/lib/clients'
+
+const US_STATES = [
+  { abbr: 'AL', name: 'Alabama' }, { abbr: 'AK', name: 'Alaska' },
+  { abbr: 'AZ', name: 'Arizona' }, { abbr: 'AR', name: 'Arkansas' },
+  { abbr: 'CA', name: 'California' }, { abbr: 'CO', name: 'Colorado' },
+  { abbr: 'CT', name: 'Connecticut' }, { abbr: 'DE', name: 'Delaware' },
+  { abbr: 'DC', name: 'District of Columbia' }, { abbr: 'FL', name: 'Florida' },
+  { abbr: 'GA', name: 'Georgia' }, { abbr: 'HI', name: 'Hawaii' },
+  { abbr: 'ID', name: 'Idaho' }, { abbr: 'IL', name: 'Illinois' },
+  { abbr: 'IN', name: 'Indiana' }, { abbr: 'IA', name: 'Iowa' },
+  { abbr: 'KS', name: 'Kansas' }, { abbr: 'KY', name: 'Kentucky' },
+  { abbr: 'LA', name: 'Louisiana' }, { abbr: 'ME', name: 'Maine' },
+  { abbr: 'MD', name: 'Maryland' }, { abbr: 'MA', name: 'Massachusetts' },
+  { abbr: 'MI', name: 'Michigan' }, { abbr: 'MN', name: 'Minnesota' },
+  { abbr: 'MS', name: 'Mississippi' }, { abbr: 'MO', name: 'Missouri' },
+  { abbr: 'MT', name: 'Montana' }, { abbr: 'NE', name: 'Nebraska' },
+  { abbr: 'NV', name: 'Nevada' }, { abbr: 'NH', name: 'New Hampshire' },
+  { abbr: 'NJ', name: 'New Jersey' }, { abbr: 'NM', name: 'New Mexico' },
+  { abbr: 'NY', name: 'New York' }, { abbr: 'NC', name: 'North Carolina' },
+  { abbr: 'ND', name: 'North Dakota' }, { abbr: 'OH', name: 'Ohio' },
+  { abbr: 'OK', name: 'Oklahoma' }, { abbr: 'OR', name: 'Oregon' },
+  { abbr: 'PA', name: 'Pennsylvania' }, { abbr: 'RI', name: 'Rhode Island' },
+  { abbr: 'SC', name: 'South Carolina' }, { abbr: 'SD', name: 'South Dakota' },
+  { abbr: 'TN', name: 'Tennessee' }, { abbr: 'TX', name: 'Texas' },
+  { abbr: 'UT', name: 'Utah' }, { abbr: 'VT', name: 'Vermont' },
+  { abbr: 'VA', name: 'Virginia' }, { abbr: 'WA', name: 'Washington' },
+  { abbr: 'WV', name: 'West Virginia' }, { abbr: 'WI', name: 'Wisconsin' },
+  { abbr: 'WY', name: 'Wyoming' },
+]
+
+async function fetchGraphUsers(q: string): Promise<ComboboxOption[]> {
+  const res = await fetch(`/api/graph/users?q=${encodeURIComponent(q)}`)
+  if (!res.ok) return []
+  const data: { displayName: string; mail?: string; userPrincipalName: string }[] = await res.json()
+  return data.map(u => ({
+    label: u.displayName,
+    value: u.displayName,
+    secondary: u.mail ?? u.userPrincipalName,
+  }))
+}
 
 const TABS = ['General Information', 'Milestones', 'Task Scheduler', 'Files', 'Finance', 'Calendar'] as const
 type Tab = (typeof TABS)[number]
@@ -176,7 +217,12 @@ export default function EditProjectForm({
                   </Field>
                   <div className="grid grid-cols-2 gap-4">
                     <Field label="State" required error={errors.state?.message}>
-                      <input {...register('state')} className={inputClass(!!errors.state)} placeholder="NY" />
+                      <select {...register('state')} className={inputClass(!!errors.state)}>
+                        <option value="">Select state...</option>
+                        {US_STATES.map(s => (
+                          <option key={s.abbr} value={s.abbr}>{s.name}</option>
+                        ))}
+                      </select>
                     </Field>
                     <Field label="ZIP Code" error={errors.zip_code?.message}>
                       <input {...register('zip_code')} className={inputClass(!!errors.zip_code)} placeholder="10001" />
@@ -232,7 +278,18 @@ export default function EditProjectForm({
                 <div>
                   <h3 className="text-white font-semibold text-sm mb-3">PM Information</h3>
                   <div className="border-t border-[#1E3A5F] pt-4 space-y-4">
-                    <Field label="Name"><input {...register('americloud_pm')} className={inputClass(false)} placeholder="PM full name" /></Field>
+                    <Field label="Name">
+                      <SearchableCombobox
+                        value={watch('americloud_pm') ?? ''}
+                        onSelect={(name, email) => {
+                          setValue('americloud_pm', name, { shouldDirty: true })
+                          if (email) setValue('americloud_pm_email', email, { shouldDirty: true })
+                        }}
+                        fetchOptions={fetchGraphUsers}
+                        placeholder="Search AmeriCloud staff..."
+                        inputClassName={inputClass(false)}
+                      />
+                    </Field>
                     <Field label="Email" error={errors.americloud_pm_email?.message}><input {...register('americloud_pm_email')} type="email" className={inputClass(!!errors.americloud_pm_email)} placeholder="pm@americloudtelecom.com" /></Field>
                     <Field label="Phone"><input {...register('americloud_pm_phone')} type="tel" className={inputClass(false)} placeholder="(555) 000-0000" /></Field>
                   </div>

@@ -4,6 +4,8 @@ import { FIELD_ENGINEERS } from '@/lib/field-engineers'
 
 type Booking = {
   id: string
+  name: string | null
+  email: string | null
   task: string | null
   location: string | null
   date_from: string
@@ -14,13 +16,31 @@ type Booking = {
 
 const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
-const PROJECT_COLORS = [
+const FE_COLORS = [
   '#C8102E', '#3B82F6', '#10B981', '#F59E0B', '#8B5CF6',
   '#EC4899', '#06B6D4', '#84CC16', '#F97316', '#6366F1',
+  '#EF4444', '#14B8A6', '#F43F5E', '#A855F7', '#22C55E',
+  '#EAB308', '#0EA5E9', '#D946EF', '#64748B', '#FB923C',
+  '#4F46E5', '#0891B2', '#65A30D', '#DC2626', '#9333EA',
+  '#0D9488', '#B45309', '#BE185D', '#1D4ED8', '#15803D',
 ]
 
+function getFeColor(email: string | null): string {
+  if (!email) return '#64748B'
+  const idx = FIELD_ENGINEERS.findIndex(e => e.email.toLowerCase() === email.toLowerCase())
+  return FE_COLORS[idx >= 0 ? idx % FE_COLORS.length : 0]
+}
+
+function initials(name: string | null): string {
+  if (!name) return '?'
+  const parts = name.trim().split(/\s+/)
+  if (parts.length === 1) return (parts[0][0] ?? '?').toUpperCase()
+  return ((parts[0][0] ?? '') + (parts[parts.length - 1][0] ?? '')).toUpperCase()
+}
+
 export default function CalendarTab({ projectId: _projectId }: { projectId: string }) {
-  const [selectedEmail, setSelectedEmail] = useState<string>(FIELD_ENGINEERS[0]?.email ?? '')
+  // null = all FEs view; string = single FE view
+  const [selectedEmail, setSelectedEmail] = useState<string | null>(null)
   const [currentDate, setCurrentDate] = useState(() => {
     const now = new Date()
     return new Date(now.getFullYear(), now.getMonth(), 1)
@@ -33,9 +53,18 @@ export default function CalendarTab({ projectId: _projectId }: { projectId: stri
   const month = currentDate.getMonth() + 1
 
   useEffect(() => {
-    if (!selectedEmail || selectedEmail === 'N/A') { setBookings([]); return }
     setLoading(true)
-    fetch(`/api/calendar?email=${encodeURIComponent(selectedEmail)}&month=${month}&year=${year}`)
+    const url = selectedEmail && selectedEmail !== 'N/A'
+      ? `/api/calendar?email=${encodeURIComponent(selectedEmail)}&month=${month}&year=${year}`
+      : `/api/calendar?month=${month}&year=${year}`
+
+    if (selectedEmail === 'N/A') {
+      setBookings([])
+      setLoading(false)
+      return
+    }
+
+    fetch(url)
       .then(r => r.json())
       .then(data => setBookings(Array.isArray(data) ? data : []))
       .catch(() => setBookings([]))
@@ -46,17 +75,11 @@ export default function CalendarTab({ projectId: _projectId }: { projectId: stri
     e.name.toLowerCase().includes(search.toLowerCase())
   )
 
-  const selectedEngineer = FIELD_ENGINEERS.find(e => e.email === selectedEmail)
+  const selectedEngineer = selectedEmail
+    ? FIELD_ENGINEERS.find(e => e.email === selectedEmail)
+    : null
   const monthName = new Date(year, month - 1, 1).toLocaleString('default', { month: 'long' })
   const todayStr = new Date().toISOString().split('T')[0]
-
-  const projectColorMap: Record<string, string> = {}
-  let colorIdx = 0
-  bookings.forEach(b => {
-    if (!projectColorMap[b.project_id]) {
-      projectColorMap[b.project_id] = PROJECT_COLORS[colorIdx++ % PROJECT_COLORS.length]
-    }
-  })
 
   const firstDayOfWeek = new Date(year, month - 1, 1).getDay()
   const daysInMonth = new Date(year, month, 0).getDate()
@@ -65,17 +88,46 @@ export default function CalendarTab({ projectId: _projectId }: { projectId: stri
   for (let d = 1; d <= daysInMonth; d++) cells.push(d)
   while (cells.length % 7 !== 0) cells.push(null)
 
-  const dayMap: Record<number, Booking[]> = {}
-  for (let d = 1; d <= daysInMonth; d++) {
-    const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`
-    dayMap[d] = bookings.filter(b => b.date_from <= dateStr && b.date_to >= dateStr)
+  const weeks = cells.length / 7
+  const rowHeight = Math.max(80, Math.floor(480 / weeks))
+
+  // All-FEs mode: aggregate bookings by day → list of distinct FEs
+  const allFEDayMap: Record<number, Booking[]> = {}
+  if (selectedEmail === null) {
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`
+      const dayBookings = bookings.filter(b => b.date_from <= dateStr && b.date_to >= dateStr)
+      const seen = new Set<string>()
+      allFEDayMap[d] = dayBookings.filter(b => {
+        const key = (b.email ?? '').toLowerCase()
+        if (!key || seen.has(key)) return false
+        seen.add(key)
+        return true
+      })
+    }
   }
 
-  const weeks = cells.length / 7
-  const rowHeight = Math.max(72, Math.floor(480 / weeks))
+  // Single-FE mode: color per project
+  const projectColorMap: Record<string, string> = {}
+  let colorIdx = 0
+  if (selectedEmail !== null) {
+    bookings.forEach(b => {
+      if (!projectColorMap[b.project_id]) {
+        projectColorMap[b.project_id] = FE_COLORS[colorIdx++ % FE_COLORS.length]
+      }
+    })
+  }
+
+  const singleFEDayMap: Record<number, Booking[]> = {}
+  if (selectedEmail !== null) {
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`
+      singleFEDayMap[d] = bookings.filter(b => b.date_from <= dateStr && b.date_to >= dateStr)
+    }
+  }
 
   return (
-    <div className="flex border border-[#1E3A5F] rounded-xl overflow-hidden" style={{ height: 560 }}>
+    <div className="flex border border-[#1E3A5F] rounded-xl overflow-hidden" style={{ height: 580 }}>
 
       {/* Left sidebar — engineer list */}
       <div className="w-52 shrink-0 border-r border-[#1E3A5F] flex flex-col bg-[#0B1929]">
@@ -89,17 +141,33 @@ export default function CalendarTab({ projectId: _projectId }: { projectId: stri
           />
         </div>
         <div className="overflow-y-auto flex-1">
-          {filteredEngineers.map(fe => (
+          {/* All FEs button */}
+          <button
+            type="button"
+            onClick={() => setSelectedEmail(null)}
+            className={`w-full text-left px-3 py-2 text-xs transition-colors border-b border-[#1E3A5F]/60 font-semibold ${
+              selectedEmail === null
+                ? 'bg-[#C8102E]/20 text-[#C8102E] border-l-2 border-l-[#C8102E]'
+                : 'text-[#94A3B8] hover:bg-[#112240] hover:text-white'
+            }`}
+          >
+            All Engineers
+          </button>
+          {filteredEngineers.map((fe, idx) => (
             <button
               key={fe.email}
               type="button"
               onClick={() => setSelectedEmail(fe.email)}
-              className={`w-full text-left px-3 py-2 text-xs transition-colors border-b border-[#1E3A5F]/40 ${
+              className={`w-full text-left px-3 py-2 text-xs transition-colors border-b border-[#1E3A5F]/40 flex items-center gap-1.5 ${
                 selectedEmail === fe.email
                   ? 'bg-[#1E3A5F] text-white font-semibold'
                   : 'text-[#94A3B8] hover:bg-[#112240] hover:text-white'
               }`}
             >
+              <span
+                className="inline-block w-1.5 h-1.5 rounded-full shrink-0"
+                style={{ backgroundColor: FE_COLORS[idx % FE_COLORS.length] }}
+              />
               {fe.name}
             </button>
           ))}
@@ -122,7 +190,7 @@ export default function CalendarTab({ projectId: _projectId }: { projectId: stri
                 <polyline points="15 18 9 12 15 6"/>
               </svg>
             </button>
-            <span className="text-white font-semibold text-sm w-34 text-center select-none" style={{ minWidth: 136 }}>
+            <span className="text-white font-semibold text-sm text-center select-none" style={{ minWidth: 136 }}>
               {monthName} {year}
             </span>
             <button
@@ -137,11 +205,9 @@ export default function CalendarTab({ projectId: _projectId }: { projectId: stri
             </button>
           </div>
           <div className="flex items-center gap-3">
-            {selectedEngineer && (
-              <span className="text-[#94A3B8] text-xs hidden sm:block truncate max-w-[180px]">
-                {selectedEngineer.name}
-              </span>
-            )}
+            <span className="text-[#94A3B8] text-xs hidden sm:block truncate max-w-[200px]">
+              {selectedEmail === null ? 'All Engineers' : (selectedEngineer?.name ?? '')}
+            </span>
             <button
               type="button"
               onClick={() => setCurrentDate(new Date())}
@@ -187,12 +253,11 @@ export default function CalendarTab({ projectId: _projectId }: { projectId: stri
                 const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
                 const isToday = dateStr === todayStr
                 const isWeekend = idx % 7 === 0 || idx % 7 === 6
-                const dayBookings = dayMap[day] ?? []
 
                 return (
                   <div
                     key={day}
-                    className={`border-r border-b border-[#1E3A5F] p-1.5 flex flex-col gap-0.5 ${
+                    className={`border-r border-b border-[#1E3A5F] p-1 flex flex-col gap-0.5 ${
                       idx % 7 === 6 ? 'border-r-0' : ''
                     } ${isWeekend ? 'bg-[#0B1929]/70' : 'bg-[#112240]'}`}
                     style={{ height: rowHeight }}
@@ -208,26 +273,61 @@ export default function CalendarTab({ projectId: _projectId }: { projectId: stri
                       </span>
                     </div>
 
-                    {/* Booking blocks */}
-                    {dayBookings.slice(0, 2).map((b, bi) => (
-                      <div
-                        key={`${b.id}-${bi}`}
-                        className="rounded px-1.5 py-0.5 text-white truncate shrink-0 cursor-default"
-                        style={{
-                          backgroundColor: projectColorMap[b.project_id] ?? '#C8102E',
-                          fontSize: 10,
-                          lineHeight: '14px',
-                        }}
-                        title={`${b.project_name}: ${b.task ?? '—'}${b.location ? ` · ${b.location}` : ''}`}
-                      >
-                        {b.project_name}
-                      </div>
-                    ))}
-                    {dayBookings.length > 2 && (
-                      <span className="text-[#94A3B8] shrink-0" style={{ fontSize: 10, lineHeight: '14px' }}>
-                        +{dayBookings.length - 2} more
-                      </span>
-                    )}
+                    {/* All-FEs mode: vertical strips */}
+                    {selectedEmail === null && (() => {
+                      const dayFEs = allFEDayMap[day] ?? []
+                      if (dayFEs.length === 0) return null
+                      return (
+                        <div className="flex gap-0.5 flex-1 min-h-0 overflow-hidden">
+                          {dayFEs.slice(0, 4).map(fe => {
+                            const feColor = getFeColor(fe.email)
+                            const feInitials = initials(fe.name)
+                            return (
+                              <div
+                                key={fe.email}
+                                className="flex-1 min-w-0 rounded flex flex-col items-center justify-start pt-0.5 overflow-hidden cursor-default"
+                                style={{ backgroundColor: feColor }}
+                                title={`${fe.name ?? fe.email}: ${fe.project_name}${fe.task ? ` · ${fe.task}` : ''}`}
+                              >
+                                <span className="text-white font-bold leading-tight" style={{ fontSize: 9 }}>{feInitials}</span>
+                                <span className="text-white/80 leading-tight truncate w-full text-center px-px" style={{ fontSize: 8 }}>{fe.project_name}</span>
+                              </div>
+                            )
+                          })}
+                          {dayFEs.length > 4 && (
+                            <span className="text-[#94A3B8] self-end leading-none" style={{ fontSize: 9 }}>+{dayFEs.length - 4}</span>
+                          )}
+                        </div>
+                      )
+                    })()}
+
+                    {/* Single-FE mode: booking blocks */}
+                    {selectedEmail !== null && (() => {
+                      const dayBookings = singleFEDayMap[day] ?? []
+                      return (
+                        <>
+                          {dayBookings.slice(0, 2).map((b, bi) => (
+                            <div
+                              key={`${b.id}-${bi}`}
+                              className="rounded px-1.5 py-0.5 text-white truncate shrink-0 cursor-default"
+                              style={{
+                                backgroundColor: projectColorMap[b.project_id] ?? '#C8102E',
+                                fontSize: 10,
+                                lineHeight: '14px',
+                              }}
+                              title={`${b.project_name}: ${b.task ?? '—'}${b.location ? ` · ${b.location}` : ''}`}
+                            >
+                              {b.project_name}
+                            </div>
+                          ))}
+                          {dayBookings.length > 2 && (
+                            <span className="text-[#94A3B8] shrink-0" style={{ fontSize: 10, lineHeight: '14px' }}>
+                              +{dayBookings.length - 2} more
+                            </span>
+                          )}
+                        </>
+                      )
+                    })()}
                   </div>
                 )
               })}

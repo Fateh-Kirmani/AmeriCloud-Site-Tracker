@@ -25,6 +25,7 @@ export default function TaskSchedulerTab({ projectId }: { projectId: string }) {
   const [saveError, setSaveError] = useState(false)
   const [conflictError, setConflictError] = useState<string | null>(null)
   const [showUndo, setShowUndo] = useState(false)
+  const [rowAvailability, setRowAvailability] = useState<Record<number, Set<string>>>({})
   const pendingDeleteRef = useRef<{ row: ScheduledRow; index: number } | null>(null)
   const pendingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -77,7 +78,24 @@ export default function TaskSchedulerTab({ projectId }: { projectId: string }) {
   }
 
   function updateRow(index: number, field: keyof ScheduledRow, value: string) {
-    setRows(r => r.map((row, i) => i === index ? { ...row, [field]: value } : row))
+    setRows(prev => {
+      const next = prev.map((row, i) => i === index ? { ...row, [field]: value } : row)
+      if (field === 'date_from' || field === 'date_to') {
+        const row = next[index]
+        const df = field === 'date_from' ? value : row.date_from
+        const dt = field === 'date_to' ? value : row.date_to
+        if (df && dt) {
+          fetch(`/api/calendar/availability?date_from=${encodeURIComponent(df)}&date_to=${encodeURIComponent(dt)}`)
+            .then(r => r.ok ? r.json() : [])
+            .then((data: { email: string }[]) => {
+              const emails = new Set(data.map(d => d.email.toLowerCase()))
+              setRowAvailability(prev2 => ({ ...prev2, [index]: emails }))
+            })
+            .catch(() => {})
+        }
+      }
+      return next
+    })
   }
 
   function deleteRow(index: number) {
@@ -174,34 +192,40 @@ export default function TaskSchedulerTab({ projectId }: { projectId: string }) {
       {rows.map((row, i) => {
         const selectedMs = milestones.find(m => m.id === row.selected_milestone_id)
         const availableTasks = selectedMs?.tasks ?? []
+        const isUnavailable = !!(row.email && rowAvailability[i]?.has(row.email.toLowerCase()))
         return (
-          <div key={i} className="flex gap-2 items-center">
-            <select
-              value={row.name}
-              onChange={e => {
-                const engineer = FIELD_ENGINEERS.find(eng => eng.name === e.target.value)
-                setRows(r => r.map((row2, i2) => i2 === i ? { ...row2, name: e.target.value, email: engineer && engineer.email !== 'N/A' ? engineer.email : '' } : row2))
-              }}
-              className={`${inputClass} flex-1`}
-            >
-              <option value="">Select engineer...</option>
-              {FIELD_ENGINEERS.map(e => <option key={e.name} value={e.name}>{e.name}</option>)}
-            </select>
-            <input value={row.email} readOnly className={`${readonlyClass} flex-1`} placeholder="Auto-filled" />
-            <select value={row.selected_milestone_id ?? ''} onChange={e => updateMilestone(i, e.target.value)} className={`${inputClass} flex-1`}>
-              <option value="">Select milestone...</option>
-              {milestones.map(m => <option key={m.id} value={m.id}>{m.details}</option>)}
-            </select>
-            <select value={row.task} onChange={e => updateRow(i, 'task', e.target.value)} className={`${inputClass} flex-1`} disabled={!row.selected_milestone_id}>
-              <option value="">{row.selected_milestone_id ? (availableTasks.length === 0 ? 'No tasks available' : 'Select task...') : 'Select milestone first'}</option>
-              {availableTasks.map(t => <option key={t.id} value={t.task}>{t.task}</option>)}
-            </select>
-            <input value={row.location} onChange={e => updateRow(i, 'location', e.target.value)} className={`${inputClass} flex-1`} placeholder="Location..." />
-            <input type="date" value={row.date_from} onChange={e => updateRow(i, 'date_from', e.target.value)} className={`${inputClass} flex-1`} />
-            <input type="date" value={row.date_to} onChange={e => updateRow(i, 'date_to', e.target.value)} className={`${inputClass} flex-1`} />
-            <button type="button" onClick={() => deleteRow(i)} aria-label="Delete scheduled task" className="text-[#94A3B8] hover:text-[#C8102E] transition-colors shrink-0">
-              <TrashIcon />
-            </button>
+          <div key={i} className="space-y-0.5">
+            <div className="flex gap-2 items-center">
+              <select
+                value={row.name}
+                onChange={e => {
+                  const engineer = FIELD_ENGINEERS.find(eng => eng.name === e.target.value)
+                  setRows(r => r.map((row2, i2) => i2 === i ? { ...row2, name: e.target.value, email: engineer && engineer.email !== 'N/A' ? engineer.email : '' } : row2))
+                }}
+                className={`${inputClass} flex-1 ${isUnavailable ? 'border-[#F87171]' : ''}`}
+              >
+                <option value="">Select engineer...</option>
+                {FIELD_ENGINEERS.map(e => <option key={e.name} value={e.name}>{e.name}</option>)}
+              </select>
+              <input value={row.email} readOnly className={`${readonlyClass} flex-1`} placeholder="Auto-filled" />
+              <select value={row.selected_milestone_id ?? ''} onChange={e => updateMilestone(i, e.target.value)} className={`${inputClass} flex-1`}>
+                <option value="">Select milestone...</option>
+                {milestones.map(m => <option key={m.id} value={m.id}>{m.details}</option>)}
+              </select>
+              <select value={row.task} onChange={e => updateRow(i, 'task', e.target.value)} className={`${inputClass} flex-1`} disabled={!row.selected_milestone_id}>
+                <option value="">{row.selected_milestone_id ? (availableTasks.length === 0 ? 'No tasks available' : 'Select task...') : 'Select milestone first'}</option>
+                {availableTasks.map(t => <option key={t.id} value={t.task}>{t.task}</option>)}
+              </select>
+              <input value={row.location} onChange={e => updateRow(i, 'location', e.target.value)} className={`${inputClass} flex-1`} placeholder="Location..." />
+              <input type="date" value={row.date_from} onChange={e => updateRow(i, 'date_from', e.target.value)} className={`${inputClass} flex-1`} />
+              <input type="date" value={row.date_to} onChange={e => updateRow(i, 'date_to', e.target.value)} className={`${inputClass} flex-1`} />
+              <button type="button" onClick={() => deleteRow(i)} aria-label="Delete scheduled task" className="text-[#94A3B8] hover:text-[#C8102E] transition-colors shrink-0">
+                <TrashIcon />
+              </button>
+            </div>
+            {isUnavailable && (
+              <p className="text-[#F87171] text-xs pl-1">⚠ {row.name} already has a booking during these dates</p>
+            )}
           </div>
         )
       })}

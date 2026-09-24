@@ -196,10 +196,6 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
     setRows(r => r.map((row, i) => i !== index ? row : { ...row, [field]: value }))
   }
 
-  function setOwnerFields(index: number, name: string, email: string) {
-    setRows(r => r.map((row, i) => i !== index ? row : { ...row, owner: name, owner_email: email }))
-  }
-
   function deleteRow(index: number) {
     const row = rows[index]
     setExpandedIndices(prev => {
@@ -424,13 +420,11 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
 
         {rows.length > 0 && (
           <div className="overflow-x-auto">
-            <table aria-label="Project Milestones" className="w-full" style={{ tableLayout: 'fixed', minWidth: 1130 }}>
+            <table aria-label="Project Milestones" className="w-full" style={{ tableLayout: 'fixed', minWidth: 810 }}>
               <colgroup>
                 <col style={{ width: 24 }} />   {/* drag */}
                 <col style={{ width: 28 }} />   {/* chevron */}
-                <col style={{ width: 220 }} />  {/* details */}
-                <col style={{ width: 148 }} />  {/* owner */}
-                <col style={{ width: 172 }} />  {/* owner email */}
+                <col style={{ width: 420 }} />  {/* details */}
                 <col style={{ width: 120 }} />  {/* projected */}
                 <col style={{ width: 120 }} />  {/* actual */}
                 <col style={{ width: 130 }} />  {/* status */}
@@ -442,8 +436,6 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
                   <th />
                   <th />
                   <th className="text-left pb-2 pr-2 text-[#94A3B8] text-xs uppercase tracking-wider font-medium">Milestone Details</th>
-                  <th className="text-left pb-2 pr-2 text-[#94A3B8] text-xs uppercase tracking-wider font-medium">Owner</th>
-                  <th className="text-left pb-2 pr-2 text-[#94A3B8] text-xs uppercase tracking-wider font-medium">Owner Email</th>
                   <th className="text-left pb-2 pr-2 text-[#94A3B8] text-xs uppercase tracking-wider font-medium">Projected</th>
                   <th className="text-left pb-2 pr-2 text-[#94A3B8] text-xs uppercase tracking-wider font-medium">Actual</th>
                   <th className="text-left pb-2 pr-2 text-[#94A3B8] text-xs uppercase tracking-wider font-medium">Status</th>
@@ -496,18 +488,6 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
                       </td>
                       <td className="py-1 pr-2">
                         <input value={row.details} onChange={e => updateRow(i, 'details', e.target.value)} className={cellInput} placeholder="Milestone details" />
-                      </td>
-                      <td className="py-1 pr-2">
-                        <SearchableCombobox
-                          value={row.owner}
-                          onSelect={(name, email) => setOwnerFields(i, name, email ?? '')}
-                          fetchOptions={fetchGraphUsers}
-                          placeholder="Search name..."
-                          inputClassName={cellInput}
-                        />
-                      </td>
-                      <td className="py-1 pr-2">
-                        <input value={row.owner_email} readOnly className={cellReadonly} placeholder="Auto-filled" />
                       </td>
                       <td className="py-1 pr-2">
                         <input type="date" value={row.projected_date} onChange={e => updateRow(i, 'projected_date', e.target.value)} className={cellInput} style={getProjectedDateStyle(row.projected_date, row.actualized_date)} />

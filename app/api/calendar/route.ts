@@ -7,17 +7,18 @@ export async function GET(request: NextRequest) {
   const month = parseInt(searchParams.get('month') ?? '0', 10)
   const year = parseInt(searchParams.get('year') ?? '0', 10)
 
-  if (!email) return NextResponse.json({ error: 'email required' }, { status: 400 })
-
   try {
     const supabase = createSupabaseClient()
 
     let query = supabase
       .from('crew_members')
-      .select('id, task, location, date_from, date_to, project_id')
-      .ilike('email', email)
+      .select('id, name, email, task, location, date_from, date_to, project_id')
       .not('date_from', 'is', null)
       .not('date_to', 'is', null)
+
+    if (email) {
+      query = query.ilike('email', email)
+    }
 
     if (month && year) {
       const startOfMonth = `${year}-${String(month).padStart(2, '0')}-01`
@@ -45,6 +46,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(
       (crewData ?? []).map(c => ({
         id: c.id,
+        name: c.name,
+        email: c.email,
         task: c.task,
         location: c.location,
         date_from: c.date_from,
