@@ -420,15 +420,15 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
 
         {rows.length > 0 && (
           <div className="overflow-x-auto">
-            <table aria-label="Project Milestones" className="w-full" style={{ tableLayout: 'fixed', minWidth: 810 }}>
+            <table aria-label="Project Milestones" className="w-full" style={{ tableLayout: 'fixed', minWidth: 1060 }}>
               <colgroup>
                 <col style={{ width: 24 }} />   {/* drag */}
                 <col style={{ width: 28 }} />   {/* chevron */}
                 <col style={{ width: 420 }} />  {/* details */}
-                <col style={{ width: 120 }} />  {/* projected */}
-                <col style={{ width: 120 }} />  {/* actual */}
-                <col style={{ width: 130 }} />  {/* status */}
-                <col style={{ width: 140 }} />  {/* milestone notes */}
+                <col style={{ width: 150 }} />  {/* projected */}
+                <col style={{ width: 150 }} />  {/* actual */}
+                <col style={{ width: 160 }} />  {/* status */}
+                <col style={{ width: 200 }} />  {/* milestone notes */}
                 <col style={{ width: 24 }} />   {/* delete */}
               </colgroup>
               <thead>
