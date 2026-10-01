@@ -28,5 +28,6 @@ export const FIELD_ENGINEERS: { name: string; email: string }[] = [
   { name: 'Sai Manikanta Kolla', email: 'smkolla@americloudtelecom.com' },
   { name: 'Sri Vishnu Yadala', email: 'svyadala@americloudtelecom.com' },
   { name: 'Thirumalesh Naggari', email: 'tnaggari@americloudtelecom.com' },
+  { name: 'Yamen Zeid Al Kilani', email: 'yamenkilani@americloudtelecom.com' },
   { name: 'Fateh Kirmani', email: 'fkirmani@americloudtelecom.com' },
 ]
