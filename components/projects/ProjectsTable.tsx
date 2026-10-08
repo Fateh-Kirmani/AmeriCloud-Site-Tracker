@@ -267,9 +267,6 @@ export default function ProjectsTable({ projects, currentSort, currentDir, hasAc
                 <th className="text-left px-4 py-3 text-[#94A3B8] uppercase text-xs tracking-wider font-medium">
                   Notes
                 </th>
-                <th className="text-left px-4 py-3 text-[#94A3B8] uppercase text-xs tracking-wider font-medium">
-                  Creator
-                </th>
                 <th className="text-left px-4 py-3">
                   <button
                     onClick={() => handleSort('created_at')}
@@ -279,6 +276,9 @@ export default function ProjectsTable({ projects, currentSort, currentDir, hasAc
                     Date
                     <SortIcon active={currentSort === 'created_at'} dir={currentDir} />
                   </button>
+                </th>
+                <th className="text-left px-4 py-3 text-[#94A3B8] uppercase text-xs tracking-wider font-medium">
+                  Creator
                 </th>
                 <th className="px-4 py-3 text-[#94A3B8] uppercase text-xs tracking-wider font-medium text-right">
                   Actions
@@ -317,11 +317,11 @@ export default function ProjectsTable({ projects, currentSort, currentDir, hasAc
                       </svg>
                     </button>
                   </td>
-                  <td className="px-4 py-3 text-[#94A3B8]">
-                    {new Date(project.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                  </td>
                   <td className="px-4 py-3 text-[#94A3B8] text-xs">
                     {project.created_by_name ?? (project.created_by ? project.created_by.split('@')[0] : '—')}
+                  </td>
+                  <td className="px-4 py-3 text-[#94A3B8]">
+                    {new Date(project.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-end gap-2">
