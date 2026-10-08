@@ -119,7 +119,7 @@ export async function PUT(
     }
 
     if (crew_members.length > 0) {
-      const rows = (crew_members as Record<string, unknown>[]).map((m, i) => ({
+      const allRows = (crew_members as Record<string, unknown>[]).map((m, i) => ({
         ...(m.id ? { id: m.id } : {}),
         project_id: id,
         name: (m.name as string) || null,
@@ -130,10 +130,26 @@ export async function PUT(
         date_to: (m.date_to as string) || null,
         sort_order: (m.sort_order as number) ?? i,
       }))
-      const { error } = await supabase.from('crew_members').upsert(rows)
-      if (error) {
-        console.error('[PUT /api/projects/[id]/crew] upsert error:', error.message)
-        return NextResponse.json({ error: 'Database error' }, { status: 500 })
+
+      // Split into existing (have id) and new (no id) to avoid Supabase
+      // normalising the batch and setting id=null on new rows, which violates
+      // the NOT NULL constraint on the primary key.
+      const existingRows = allRows.filter(r => 'id' in r)
+      const newRows = allRows.filter(r => !('id' in r))
+
+      if (existingRows.length > 0) {
+        const { error } = await supabase.from('crew_members').upsert(existingRows)
+        if (error) {
+          console.error('[PUT /api/projects/[id]/crew] upsert error:', error.message)
+          return NextResponse.json({ error: 'Database error' }, { status: 500 })
+        }
+      }
+      if (newRows.length > 0) {
+        const { error } = await supabase.from('crew_members').insert(newRows)
+        if (error) {
+          console.error('[PUT /api/projects/[id]/crew] insert error:', error.message)
+          return NextResponse.json({ error: 'Database error' }, { status: 500 })
+        }
       }
     }
 
