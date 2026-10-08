@@ -1,5 +1,5 @@
 'use client'
-import { Fragment, useState, useEffect, useRef } from 'react'
+import { Fragment, useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import TrashIcon from '@/components/icons/TrashIcon'
 import { MilestoneRow, MilestoneTask, ProjectNote } from '@/types/milestone'
@@ -48,12 +48,11 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
   const { data: session } = useSession()
   const [rows, setRows] = useState<RowWithKey[]>([])
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
-  const [deletedIds, setDeletedIds] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [fetchError, setFetchError] = useState(false)
   const [saveError, setSaveError] = useState(false)
-  const [showUndo, setShowUndo] = useState(false)
+  const [deletingIndex, setDeletingIndex] = useState<number | null>(null)
   const [dragIndex, setDragIndex] = useState<number | null>(null)
 
   // Inline task expansion — all expanded by default
@@ -78,13 +77,6 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
   const [templateName, setTemplateName] = useState('')
   const [savingTemplate, setSavingTemplate] = useState(false)
   const [templateSaveError, setTemplateSaveError] = useState('')
-
-  const pendingDeleteRef = useRef<{ row: RowWithKey; index: number } | null>(null)
-  const pendingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  useEffect(() => {
-    return () => { if (pendingTimerRef.current) clearTimeout(pendingTimerRef.current) }
-  }, [])
 
   useEffect(() => {
     async function load() {
@@ -196,8 +188,20 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
     setRows(r => r.map((row, i) => i !== index ? row : { ...row, [field]: value }))
   }
 
-  function deleteRow(index: number) {
+  async function deleteRow(index: number) {
     const row = rows[index]
+    if (row.id) {
+      setDeletingIndex(index)
+      try {
+        const res = await fetch(`/api/projects/${projectId}/milestones/${row.id}`, { method: 'DELETE' })
+        if (!res.ok) throw new Error()
+      } catch {
+        setDeletingIndex(null)
+        setToast({ message: 'Failed to delete milestone. Please try again.', type: 'error' })
+        return
+      }
+      setDeletingIndex(null)
+    }
     setExpandedIndices(prev => {
       const next = new Set<number>()
       prev.forEach(i => { if (i < index) next.add(i); else if (i > index) next.add(i - 1) })
@@ -213,28 +217,6 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
       return next
     })
     setRows(r => r.filter((_, i) => i !== index))
-    if (pendingDeleteRef.current) {
-      if (pendingTimerRef.current) clearTimeout(pendingTimerRef.current)
-      if (pendingDeleteRef.current.row.id) setDeletedIds(ids => [...ids, pendingDeleteRef.current!.row.id!])
-    }
-    pendingDeleteRef.current = { row, index }
-    setShowUndo(true)
-    pendingTimerRef.current = setTimeout(() => {
-      if (pendingDeleteRef.current?.row.id) setDeletedIds(ids => [...ids, pendingDeleteRef.current!.row.id!])
-      pendingDeleteRef.current = null
-      pendingTimerRef.current = null
-      setShowUndo(false)
-    }, 5000)
-  }
-
-  function undoDelete() {
-    if (!pendingDeleteRef.current) return
-    if (pendingTimerRef.current) clearTimeout(pendingTimerRef.current)
-    const { row, index } = pendingDeleteRef.current
-    setRows(r => { const next = [...r]; next.splice(Math.min(index, r.length), 0, row); return next })
-    pendingDeleteRef.current = null
-    pendingTimerRef.current = null
-    setShowUndo(false)
   }
 
   function toggleExpand(index: number) {
@@ -281,14 +263,6 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
   }
 
   async function save() {
-    let extraIds: string[] = []
-    if (pendingDeleteRef.current) {
-      if (pendingTimerRef.current) clearTimeout(pendingTimerRef.current)
-      if (pendingDeleteRef.current.row.id) extraIds = [pendingDeleteRef.current.row.id]
-      pendingDeleteRef.current = null
-      pendingTimerRef.current = null
-      setShowUndo(false)
-    }
     setSaving(true)
     setSaveError(false)
     try {
@@ -297,7 +271,7 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           milestones: rows.map(({ _key: _, ...r }, i) => ({ ...r, sort_order: i })),
-          deleted_ids: [...deletedIds, ...extraIds],
+          deleted_ids: [],
         }),
       })
       if (!res.ok) throw new Error()
@@ -309,7 +283,6 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
         projected_date: m.projected_date ?? '', actualized_date: m.actualized_date ?? '',
         notes: m.notes ?? '', status: m.status ?? 'Active', tasks: m.tasks ?? [],
       })))
-      setDeletedIds([])
     } catch {
       setSaveError(true)
     } finally {
@@ -448,6 +421,7 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
                   <Fragment key={row._key}>
                     <tr
                       draggable
+                      style={deletingIndex === i ? { opacity: 0.4, pointerEvents: 'none' } : undefined}
                       onDragStart={() => setDragIndex(i)}
                       onDragOver={e => {
                         e.preventDefault()
@@ -511,7 +485,13 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
                         </button>
                       </td>
                       <td className="py-1 align-middle">
-                        <button type="button" onClick={() => deleteRow(i)} aria-label="Delete milestone" className="text-[#94A3B8] hover:text-[#C8102E] transition-colors">
+                        <button
+                          type="button"
+                          onClick={() => deleteRow(i)}
+                          disabled={deletingIndex !== null}
+                          aria-label="Delete milestone"
+                          className="text-[#94A3B8] hover:text-[#C8102E] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                        >
                           <TrashIcon />
                         </button>
                       </td>
@@ -634,13 +614,6 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
                 ))}
               </tbody>
             </table>
-          </div>
-        )}
-
-        {showUndo && (
-          <div className="flex items-center justify-between bg-[#1E3A5F] rounded-lg px-4 py-2 text-sm">
-            <span className="text-[#94A3B8]">Milestone deleted.</span>
-            <button type="button" onClick={undoDelete} className="text-[#C8102E] hover:text-white font-medium ml-4 transition-colors">Undo</button>
           </div>
         )}
 
