@@ -5,12 +5,15 @@ import { useRouter } from 'next/navigation'
 import { Project } from '@/types/project'
 import { ProjectNote } from '@/types/milestone'
 import DeleteConfirmModal from '@/components/projects/DeleteConfirmModal'
+import ManageAccessModal from '@/components/projects/ManageAccessModal'
 
 type Props = {
   projects: Project[]
   currentSort: string
   currentDir: 'asc' | 'desc'
   hasActiveFilters?: boolean
+  currentUserEmail?: string
+  editorProjectIds?: string[]
 }
 
 function SortIcon({ active, dir }: { active: boolean; dir: 'asc' | 'desc' }) {
@@ -34,12 +37,23 @@ function StatusBadge({ status }: { status: string }) {
   )
 }
 
-export default function ProjectsTable({ projects, currentSort, currentDir, hasActiveFilters }: Props) {
+export default function ProjectsTable({ projects, currentSort, currentDir, hasActiveFilters, currentUserEmail = '', editorProjectIds = [] }: Props) {
   const router = useRouter()
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; siteName: string } | null>(null)
   const [notesProject, setNotesProject] = useState<{ id: string; site_name: string } | null>(null)
   const [notesList, setNotesList] = useState<ProjectNote[]>([])
   const [notesLoading, setNotesLoading] = useState(false)
+  const [manageAccessProject, setManageAccessProject] = useState<{ id: string; site_name: string } | null>(null)
+
+  function canEdit(project: Project): boolean {
+    if (!currentUserEmail) return false
+    if (project.created_by?.toLowerCase() === currentUserEmail) return true
+    return editorProjectIds.includes(project.id)
+  }
+
+  function isCreator(project: Project): boolean {
+    return !!currentUserEmail && project.created_by?.toLowerCase() === currentUserEmail
+  }
 
   async function openNotes(project: Project) {
     setNotesProject({ id: project.id, site_name: project.site_name })
@@ -127,6 +141,13 @@ export default function ProjectsTable({ projects, currentSort, currentDir, hasAc
           onDeleted={() => setDeleteTarget(null)}
         />
       )}
+      {manageAccessProject && (
+        <ManageAccessModal
+          projectId={manageAccessProject.id}
+          projectName={manageAccessProject.site_name}
+          onClose={() => setManageAccessProject(null)}
+        />
+      )}
       <div className="bg-[#112240] border border-[#1E3A5F] rounded-xl overflow-hidden">
 
         {/* Mobile cards — shown below sm */}
@@ -155,22 +176,39 @@ export default function ProjectsTable({ projects, currentSort, currentDir, hasAc
               <p className="text-[#94A3B8] text-xs mt-0.5">
                 {new Date(project.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
               </p>
+              {(project.created_by_name || project.created_by) && (
+                <p className="text-[#94A3B8] text-xs mt-0.5">
+                  By {project.created_by_name ?? project.created_by!.split('@')[0]}
+                </p>
+              )}
               <div className="flex gap-2 mt-3">
                 <Link
                   href={`/projects/${project.id}/edit`}
-                  aria-label={`Edit ${project.site_name}`}
+                  aria-label={canEdit(project) ? `Edit ${project.site_name}` : `View ${project.site_name}`}
                   className="flex-1 text-center border border-[#1E3A5F] text-[#94A3B8] hover:text-white hover:border-white rounded-md py-1.5 text-xs font-medium transition-colors"
                 >
-                  Edit
+                  {canEdit(project) ? 'Edit' : 'View'}
                 </Link>
-                <button
-                  type="button"
-                  onClick={() => setDeleteTarget({ id: project.id, siteName: project.site_name })}
-                  aria-label={`Delete ${project.site_name}`}
-                  className="flex-1 border border-[#1E3A5F] text-[#94A3B8] hover:text-[#C8102E] hover:border-[#C8102E] rounded-md py-1.5 text-xs font-medium transition-colors"
-                >
-                  Delete
-                </button>
+                {isCreator(project) && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setManageAccessProject({ id: project.id, site_name: project.site_name })}
+                      aria-label={`Manage access for ${project.site_name}`}
+                      className="flex-1 border border-[#1E3A5F] text-[#94A3B8] hover:text-white hover:border-white rounded-md py-1.5 text-xs font-medium transition-colors"
+                    >
+                      Access
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDeleteTarget({ id: project.id, siteName: project.site_name })}
+                      aria-label={`Delete ${project.site_name}`}
+                      className="flex-1 border border-[#1E3A5F] text-[#94A3B8] hover:text-[#C8102E] hover:border-[#C8102E] rounded-md py-1.5 text-xs font-medium transition-colors"
+                    >
+                      Delete
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           ))}
@@ -229,6 +267,9 @@ export default function ProjectsTable({ projects, currentSort, currentDir, hasAc
                 <th className="text-left px-4 py-3 text-[#94A3B8] uppercase text-xs tracking-wider font-medium">
                   Notes
                 </th>
+                <th className="text-left px-4 py-3 text-[#94A3B8] uppercase text-xs tracking-wider font-medium">
+                  Creator
+                </th>
                 <th className="text-left px-4 py-3">
                   <button
                     onClick={() => handleSort('created_at')}
@@ -279,30 +320,65 @@ export default function ProjectsTable({ projects, currentSort, currentDir, hasAc
                   <td className="px-4 py-3 text-[#94A3B8]">
                     {new Date(project.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                   </td>
+                  <td className="px-4 py-3 text-[#94A3B8] text-xs">
+                    {project.created_by_name ?? (project.created_by ? project.created_by.split('@')[0] : '—')}
+                  </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-end gap-2">
-                      <Link
-                        href={`/projects/${project.id}/edit`}
-                        aria-label={`Edit ${project.site_name}`}
-                        className="text-[#94A3B8] hover:text-white transition-colors p-1.5 rounded hover:bg-[#112240]"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                        </svg>
-                      </Link>
-                      <button
-                        onClick={() => setDeleteTarget({ id: project.id, siteName: project.site_name })}
-                        aria-label={`Delete ${project.site_name}`}
-                        className="text-[#94A3B8] hover:text-[#C8102E] transition-colors p-1.5 rounded hover:bg-[#112240]"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <polyline points="3 6 5 6 21 6" />
-                          <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-                          <path d="M10 11v6M14 11v6" />
-                          <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
-                        </svg>
-                      </button>
+                      {isCreator(project) && (
+                        <button
+                          type="button"
+                          onClick={() => setManageAccessProject({ id: project.id, site_name: project.site_name })}
+                          aria-label={`Manage access for ${project.site_name}`}
+                          title="Manage Access"
+                          className="text-[#94A3B8] hover:text-white transition-colors p-1.5 rounded hover:bg-[#112240]"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                            <circle cx="9" cy="7" r="4"/>
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                          </svg>
+                        </button>
+                      )}
+                      {canEdit(project) ? (
+                        <Link
+                          href={`/projects/${project.id}/edit`}
+                          aria-label={`Edit ${project.site_name}`}
+                          className="text-[#94A3B8] hover:text-white transition-colors p-1.5 rounded hover:bg-[#112240]"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                          </svg>
+                        </Link>
+                      ) : (
+                        <Link
+                          href={`/projects/${project.id}/edit`}
+                          aria-label={`View ${project.site_name}`}
+                          title="View Only"
+                          className="text-[#94A3B8] hover:text-white transition-colors p-1.5 rounded hover:bg-[#112240]"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                            <circle cx="12" cy="12" r="3"/>
+                          </svg>
+                        </Link>
+                      )}
+                      {isCreator(project) && (
+                        <button
+                          onClick={() => setDeleteTarget({ id: project.id, siteName: project.site_name })}
+                          aria-label={`Delete ${project.site_name}`}
+                          className="text-[#94A3B8] hover:text-[#C8102E] transition-colors p-1.5 rounded hover:bg-[#112240]"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="3 6 5 6 21 6" />
+                            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                            <path d="M10 11v6M14 11v6" />
+                            <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+                          </svg>
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>

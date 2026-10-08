@@ -1,5 +1,8 @@
 import Link from 'next/link'
+import { getServerSession } from 'next-auth'
 import { createSupabaseClient } from '@/lib/supabase'
+import { authOptions } from '@/lib/auth'
+import { canEditProject } from '@/lib/permissions'
 import EditProjectForm from '@/components/forms/EditProjectForm'
 import ImportToBomButton from '@/components/forms/ImportToBomButton'
 import { Project } from '@/types/project'
@@ -40,6 +43,10 @@ export default async function EditProjectPage({
 
   const project = data as Project
 
+  const session = await getServerSession(authOptions)
+  const userEmail = session?.user?.email ?? ''
+  const canEdit = userEmail ? await canEditProject(id, userEmail) : false
+
   let templates: { id: string; name: string }[] = []
   let fullTemplates: { name: string; items: { details: string | null; notes: string | null; sort_order: number }[] }[] = []
   try {
@@ -73,7 +80,7 @@ export default async function EditProjectPage({
           projectOverview={project.project_scope ?? ''}
         />
       </div>
-      <EditProjectForm project={project} templates={templates} fullTemplates={fullTemplates} initialTab={initialTab} />
+      <EditProjectForm project={project} templates={templates} fullTemplates={fullTemplates} initialTab={initialTab} canEdit={canEdit} />
     </div>
   )
 }

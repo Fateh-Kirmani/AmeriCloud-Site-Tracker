@@ -40,11 +40,15 @@ const mockProject: Project = {
   rf_engineer_email: null,
   rf_engineer_phone: null,
   americloud_pm: null,
+  americloud_pm_email: null,
+  americloud_pm_phone: null,
   americloud_rf: null,
   project_scope: null,
   project_template: null,
   created_at: '2026-07-24T00:00:00Z',
   status: 'Active',
+  created_by: null,
+  created_by_name: null,
 }
 
 it('renders General Information tab by default', () => {

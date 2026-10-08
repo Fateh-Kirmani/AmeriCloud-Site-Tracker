@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth'
 import { createSupabaseClient } from '@/lib/supabase'
 import { sendEmail, buildEmailHtml } from '@/lib/email'
+import { authOptions } from '@/lib/auth'
+import { canEditProject } from '@/lib/permissions'
 
 export async function GET(
   _request: NextRequest,
@@ -38,6 +41,11 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params
+  const session = await getServerSession(authOptions)
+  if (!session?.user?.email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const authorized = await canEditProject(id, session.user.email)
+  if (!authorized) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+
   let body: unknown
   try {
     body = await request.json()

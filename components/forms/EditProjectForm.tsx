@@ -96,11 +96,13 @@ export default function EditProjectForm({
   templates = [],
   fullTemplates = [],
   initialTab,
+  canEdit = true,
 }: {
   project: Project
   templates?: { id: string; name: string }[]
   fullTemplates?: { name: string; items: { details: string | null; notes: string | null; sort_order: number; tasks?: { task: string }[] }[] }[]
   initialTab?: Tab
+  canEdit?: boolean
 }) {
   const router = useRouter()
   const [activeTab, setActiveTab] = useState<Tab>(initialTab ?? 'General Information')
@@ -170,6 +172,15 @@ export default function EditProjectForm({
     <>
       {toast && <Toast {...toast} onDismiss={() => setToast(null)} />}
 
+      {!canEdit && (
+        <div className="mb-4 bg-[#1E3A5F]/40 border border-[#1E3A5F] rounded-lg px-4 py-3 flex items-center gap-2">
+          <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+          </svg>
+          <p className="text-[#94A3B8] text-sm">You have view-only access to this project.</p>
+        </div>
+      )}
+
       {/* Tab bar */}
       <div className="border-b border-[#1E3A5F] mb-6" role="tablist">
         <div className="flex gap-0">
@@ -202,6 +213,7 @@ export default function EditProjectForm({
           aria-labelledby="tab-general-information"
         >
           <form onSubmit={handleSubmit(onSubmit)} aria-label="Edit project form" className="space-y-6">
+            <fieldset disabled={!canEdit} className="disabled:opacity-60 disabled:pointer-events-none contents">
             {/* Row 1 */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <FormCard title="Site Information">
@@ -318,12 +330,15 @@ export default function EditProjectForm({
             {/* Actions */}
             <div className="flex gap-4">
               <button type="button" onClick={() => router.push('/')} className="flex-1 border border-[#1E3A5F] text-[#94A3B8] hover:text-white hover:border-white font-semibold py-3.5 rounded-lg transition-colors text-sm uppercase tracking-widest">
-                Cancel
+                {canEdit ? 'Cancel' : '← Back'}
               </button>
-              <button type="submit" disabled={isSubmitting} className="flex-1 bg-[#C8102E] hover:bg-[#A50E25] disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold py-3.5 rounded-lg transition-colors text-sm uppercase tracking-widest shadow-lg">
-                {isSubmitting ? 'Saving...' : 'Save Changes'}
-              </button>
+              {canEdit && (
+                <button type="submit" disabled={isSubmitting} className="flex-1 bg-[#C8102E] hover:bg-[#A50E25] disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold py-3.5 rounded-lg transition-colors text-sm uppercase tracking-widest shadow-lg">
+                  {isSubmitting ? 'Saving...' : 'Save Changes'}
+                </button>
+              )}
             </div>
+            </fieldset>
           </form>
         </div>
       )}
@@ -335,6 +350,7 @@ export default function EditProjectForm({
             projectId={project.id}
             projectTemplate={project.project_template}
             templates={fullTemplates}
+            canEdit={canEdit}
           />
         </div>
       )}
@@ -342,7 +358,7 @@ export default function EditProjectForm({
       {/* Task Scheduler tab */}
       {activeTab === 'Task Scheduler' && (
         <div role="tabpanel" id="tabpanel-task-scheduler" aria-labelledby="tab-task-scheduler">
-          <TaskSchedulerTab projectId={project.id} />
+          <TaskSchedulerTab projectId={project.id} canEdit={canEdit} />
         </div>
       )}
 

@@ -28,6 +28,7 @@ export async function POST(request: NextRequest) {
       ...cleanedData,
       address: parsed.data.address || parsed.data.street || '',
       created_by: session?.user?.email ?? null,
+      created_by_name: session?.user?.name ?? null,
     }
 
     const supabase = createSupabaseClient()

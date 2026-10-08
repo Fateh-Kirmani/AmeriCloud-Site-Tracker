@@ -1,5 +1,7 @@
 import Link from 'next/link'
+import { getServerSession } from 'next-auth'
 import { createSupabaseClient } from '@/lib/supabase'
+import { authOptions } from '@/lib/auth'
 import FilterPanel from '@/components/projects/FilterPanel'
 import ProjectsTable from '@/components/projects/ProjectsTable'
 import { Project } from '@/types/project'
@@ -43,8 +45,12 @@ export default async function HomePage({
 
   const hasActiveFilters = !!(search || projectCode || client || template || pm || status || date || city || zip)
 
+  const session = await getServerSession(authOptions)
+  const currentUserEmail = session?.user?.email?.toLowerCase() ?? ''
+
   let filterTemplates: { id: string; name: string }[] = []
   let projects: Project[] = []
+  let editorProjectIds: string[] = []
   let fetchError = false
 
   try {
@@ -76,6 +82,14 @@ export default async function HomePage({
       fetchError = true
     } else {
       projects = (data as Project[]) ?? []
+    }
+
+    if (currentUserEmail) {
+      const { data: editorRows } = await supabase
+        .from('project_editors')
+        .select('project_id')
+        .ilike('email', currentUserEmail)
+      editorProjectIds = (editorRows ?? []).map(r => r.project_id)
     }
   } catch (err) {
     console.error('[HomePage] Unexpected error fetching projects:', err)
@@ -122,6 +136,8 @@ export default async function HomePage({
           currentSort={sort}
           currentDir={dir}
           hasActiveFilters={hasActiveFilters}
+          currentUserEmail={currentUserEmail}
+          editorProjectIds={editorProjectIds}
         />
       )}
     </div>

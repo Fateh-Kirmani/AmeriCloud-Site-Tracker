@@ -14,6 +14,11 @@ const mockProject: Project = {
   id: 'abc-123',
   site_name: 'Tower Alpha',
   address: '100 Main St, Springfield',
+  street: '100 Main St',
+  city: 'Springfield',
+  state: 'IL',
+  zip_code: null,
+  project_notes: null,
   americloud_site_id: 'AC-001',
   client: 'AT&T',
   client_site_id: 'ATT-999',
@@ -24,11 +29,15 @@ const mockProject: Project = {
   rf_engineer_email: null,
   rf_engineer_phone: null,
   americloud_pm: null,
+  americloud_pm_email: null,
+  americloud_pm_phone: null,
   americloud_rf: null,
   project_scope: null,
   project_template: 'Standard Cell Tower',
   created_at: '2026-07-20T00:00:00Z',
   status: 'Active',
+  created_by: null,
+  created_by_name: null,
 }
 
 describe('ProjectsTable', () => {

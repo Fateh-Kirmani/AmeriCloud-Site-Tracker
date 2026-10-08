@@ -1,12 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth'
 import { createSupabaseClient } from '@/lib/supabase'
 import { projectSchema } from '@/types/project'
+import { authOptions } from '@/lib/auth'
+import { canEditProject, isProjectCreator } from '@/lib/permissions'
 
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params
+  const session = await getServerSession(authOptions)
+  if (!session?.user?.email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const authorized = await canEditProject(id, session.user.email)
+  if (!authorized) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   let body: unknown
   try {
@@ -59,6 +66,10 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params
+  const session = await getServerSession(authOptions)
+  if (!session?.user?.email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const creator = await isProjectCreator(id, session.user.email)
+  if (!creator) return NextResponse.json({ error: 'Only the project creator can delete this project.' }, { status: 403 })
 
   try {
     const supabase = createSupabaseClient()

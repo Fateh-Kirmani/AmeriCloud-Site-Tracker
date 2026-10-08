@@ -35,6 +35,7 @@ type Props = {
   projectId: string
   projectTemplate?: string | null
   templates?: { name: string; items: { details: string | null; notes: string | null; sort_order: number; tasks?: { task: string }[] }[] }[]
+  canEdit?: boolean
 }
 
 function getProjectedDateStyle(projected: string, actualized: string): React.CSSProperties {
@@ -44,7 +45,7 @@ function getProjectedDateStyle(projected: string, actualized: string): React.CSS
   return projected < today ? { color: '#f87171' } : {}
 }
 
-export default function MilestonesTab({ projectId, projectTemplate, templates }: Props) {
+export default function MilestonesTab({ projectId, projectTemplate, templates, canEdit = true }: Props) {
   const { data: session } = useSession()
   const [rows, setRows] = useState<RowWithKey[]>([])
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
@@ -485,15 +486,17 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
                         </button>
                       </td>
                       <td className="py-1 align-middle">
-                        <button
-                          type="button"
-                          onClick={() => deleteRow(i)}
-                          disabled={deletingIndex !== null}
-                          aria-label="Delete milestone"
-                          className="text-[#94A3B8] hover:text-[#C8102E] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                        >
-                          <TrashIcon />
-                        </button>
+                        {canEdit && (
+                          <button
+                            type="button"
+                            onClick={() => deleteRow(i)}
+                            disabled={deletingIndex !== null}
+                            aria-label="Delete milestone"
+                            className="text-[#94A3B8] hover:text-[#C8102E] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                          >
+                            <TrashIcon />
+                          </button>
+                        )}
                       </td>
                     </tr>
 
@@ -617,9 +620,11 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
           </div>
         )}
 
-        <div className="pt-2">
-          <button type="button" onClick={addRow} className="text-[#94A3B8] hover:text-white text-sm font-medium transition-colors">+ Add Milestone</button>
-        </div>
+        {canEdit && (
+          <div className="pt-2">
+            <button type="button" onClick={addRow} className="text-[#94A3B8] hover:text-white text-sm font-medium transition-colors">+ Add Milestone</button>
+          </div>
+        )}
       </div>
 
       {/* Right: Project Notes — fixed height, own scrollbar */}
@@ -829,25 +834,27 @@ export default function MilestonesTab({ projectId, projectTemplate, templates }:
           <div className="w-px h-8 bg-[#1E3A5F] shrink-0" />
 
           {/* Save actions */}
-          <div className="flex items-center gap-3 shrink-0">
-            {saveError && <p role="alert" className="text-[#F87171] text-xs whitespace-nowrap">Failed to save. Try again.</p>}
-            <button
-              type="button"
-              onClick={() => setShowTemplateModal(true)}
-              disabled={rows.length === 0}
-              className="bg-[#F5C518] hover:bg-[#D4A800] disabled:opacity-40 disabled:cursor-not-allowed text-[#0B1929] font-semibold px-5 py-2 rounded-lg transition-colors text-sm uppercase tracking-widest whitespace-nowrap"
-            >
-              Save As Template
-            </button>
-            <button
-              type="button"
-              onClick={save}
-              disabled={saving}
-              className="bg-[#C8102E] hover:bg-[#A50E25] disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold px-6 py-2 rounded-lg transition-colors text-sm uppercase tracking-widest whitespace-nowrap"
-            >
-              {saving ? 'Saving…' : 'Save Changes'}
-            </button>
-          </div>
+          {canEdit && (
+            <div className="flex items-center gap-3 shrink-0">
+              {saveError && <p role="alert" className="text-[#F87171] text-xs whitespace-nowrap">Failed to save. Try again.</p>}
+              <button
+                type="button"
+                onClick={() => setShowTemplateModal(true)}
+                disabled={rows.length === 0}
+                className="bg-[#F5C518] hover:bg-[#D4A800] disabled:opacity-40 disabled:cursor-not-allowed text-[#0B1929] font-semibold px-5 py-2 rounded-lg transition-colors text-sm uppercase tracking-widest whitespace-nowrap"
+              >
+                Save As Template
+              </button>
+              <button
+                type="button"
+                onClick={save}
+                disabled={saving}
+                className="bg-[#C8102E] hover:bg-[#A50E25] disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold px-6 py-2 rounded-lg transition-colors text-sm uppercase tracking-widest whitespace-nowrap"
+              >
+                {saving ? 'Saving…' : 'Save Changes'}
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

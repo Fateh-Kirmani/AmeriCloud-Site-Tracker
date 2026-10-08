@@ -60,4 +60,6 @@ export type Project = {
   project_template: string | null
   created_at: string
   status: string
+  created_by: string | null
+  created_by_name: string | null
 }

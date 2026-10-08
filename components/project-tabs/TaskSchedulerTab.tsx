@@ -15,7 +15,7 @@ type MilestoneWithTasks = {
 
 type ScheduledRow = CrewMemberRow & { selected_milestone_id?: string }
 
-export default function TaskSchedulerTab({ projectId }: { projectId: string }) {
+export default function TaskSchedulerTab({ projectId, canEdit = true }: { projectId: string; canEdit?: boolean }) {
   const [rows, setRows] = useState<ScheduledRow[]>([])
   const [milestones, setMilestones] = useState<MilestoneWithTasks[]>([])
   const [loading, setLoading] = useState(true)
@@ -206,15 +206,17 @@ export default function TaskSchedulerTab({ projectId }: { projectId: string }) {
                   <input value={row.location} onChange={e => updateRow(i, 'location', e.target.value)} className={`${inputClass} flex-1`} placeholder="Location..." />
                   <input type="date" value={row.date_from} onChange={e => updateRow(i, 'date_from', e.target.value)} className={`${inputClass} flex-1`} />
                   <input type="date" value={row.date_to} onChange={e => updateRow(i, 'date_to', e.target.value)} className={`${inputClass} flex-1`} />
-                  <button
-                    type="button"
-                    onClick={() => deleteRow(i)}
-                    disabled={isDeleting || deletingIndex !== null}
-                    aria-label="Delete scheduled task"
-                    className="text-[#94A3B8] hover:text-[#C8102E] transition-colors shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
-                  >
-                    <TrashIcon />
-                  </button>
+                  {canEdit && (
+                    <button
+                      type="button"
+                      onClick={() => deleteRow(i)}
+                      disabled={isDeleting || deletingIndex !== null}
+                      aria-label="Delete scheduled task"
+                      className="text-[#94A3B8] hover:text-[#C8102E] transition-colors shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      <TrashIcon />
+                    </button>
+                  )}
                 </div>
                 {isUnavailable && (
                   <p className="text-[#F87171] text-xs pl-1">⚠ {row.name} already has a booking during these dates</p>
@@ -228,14 +230,18 @@ export default function TaskSchedulerTab({ projectId }: { projectId: string }) {
         <p role="alert" className="text-[#F87171] text-xs">Failed to delete row. Please try again.</p>
       )}
       <div className="flex items-center justify-between pt-2">
-        <button type="button" onClick={addRow} className="text-[#94A3B8] hover:text-white text-sm font-medium transition-colors">Schedule A New Task</button>
-        <div className="flex flex-col items-end gap-1">
-          {conflictError && <p role="alert" className="text-[#F87171] text-xs text-right max-w-sm">{conflictError}</p>}
-          {saveError && <p role="alert" className="text-[#F87171] text-xs">Failed to save. Please try again.</p>}
-          <button type="button" onClick={save} disabled={saving} className="bg-[#C8102E] hover:bg-[#A50E25] disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold px-6 py-2.5 rounded-lg transition-colors text-sm uppercase tracking-widest">
-            {saving ? 'Saving...' : 'Save Changes'}
-          </button>
-        </div>
+        {canEdit ? (
+          <button type="button" onClick={addRow} className="text-[#94A3B8] hover:text-white text-sm font-medium transition-colors">Schedule A New Task</button>
+        ) : <div />}
+        {canEdit && (
+          <div className="flex flex-col items-end gap-1">
+            {conflictError && <p role="alert" className="text-[#F87171] text-xs text-right max-w-sm">{conflictError}</p>}
+            {saveError && <p role="alert" className="text-[#F87171] text-xs">Failed to save. Please try again.</p>}
+            <button type="button" onClick={save} disabled={saving} className="bg-[#C8102E] hover:bg-[#A50E25] disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold px-6 py-2.5 rounded-lg transition-colors text-sm uppercase tracking-widest">
+              {saving ? 'Saving...' : 'Save Changes'}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   )
