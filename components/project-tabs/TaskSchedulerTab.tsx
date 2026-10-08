@@ -58,7 +58,7 @@ export default function TaskSchedulerTab({ projectId }: { projectId: string }) {
           location: m.location ?? '',
           date_from: m.date_from ?? '',
           date_to: m.date_to ?? '',
-          selected_milestone_id: '',
+          selected_milestone_id: ms.find(ms2 => ms2.tasks.some(t => t.task === m.task))?.id ?? '',
         })))
       } catch {
         setFetchError(true)
@@ -159,7 +159,7 @@ export default function TaskSchedulerTab({ projectId }: { projectId: string }) {
       setRows(crew_members.map((m: { id: string; name: string | null; email: string | null; task: string | null; location: string | null; date_from: string | null; date_to: string | null }) => ({
         id: m.id, name: m.name ?? '', email: m.email ?? '',
         task: m.task ?? '', location: m.location ?? '', date_from: m.date_from ?? '', date_to: m.date_to ?? '',
-        selected_milestone_id: '',
+        selected_milestone_id: milestones.find(ms => ms.tasks.some(t => t.task === m.task))?.id ?? '',
       })))
       setDeletedIds([])
     } catch {
