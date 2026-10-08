@@ -137,6 +137,8 @@ export async function PUT(
       }
     }
 
+    // Build email notifications — fire-and-forget so slow Graph API calls
+    // don't block the response or trigger a Vercel function timeout
     try {
       const projectName = project.site_name
       const baseUrl = (process.env.NEXTAUTH_URL ?? '').replace(/\/$/, '')
@@ -179,9 +181,14 @@ export async function PUT(
         }
       }
 
-      await Promise.all(emailPromises)
+      // Don't await — let emails send in the background
+      if (emailPromises.length > 0) {
+        Promise.all(emailPromises).catch(err =>
+          console.error('[PUT /api/projects/[id]/crew] email error:', err)
+        )
+      }
     } catch (emailErr) {
-      console.error('[PUT /api/projects/[id]/crew] email error:', emailErr)
+      console.error('[PUT /api/projects/[id]/crew] email setup error:', emailErr)
     }
 
     const { data, error } = await supabase
